@@ -29,8 +29,8 @@ private const val SAFEX_LIST =
 
 /**
  * X 12.7.1's central modern URT repository. Fresh GraphQL items are mapped to
- * UrtTimelineItem objects and the `z$a.b` ArrayList is emitted to the timeline
- * flow from this suspend method.
+ * UrtTimelineItem objects and the z-state result ArrayList is emitted to the
+ * timeline flow from this suspend method.
  *
  * Filtering here is materially earlier than Compose rendering: removed posts
  * never enter the emitted list.
@@ -98,14 +98,9 @@ val safeXPatch =
                 "invoke-static {}, $SAFEX->enable()V",
             )
 
-            // -----------------------------------------------------------------
-            // Fresh network/model path.
-            // Exact X 12.7.1 target in g.b():
-            //   iget-object vX, ..., Lcom/x/repositories/urt/z$a;->b:ArrayList
-            //   ...
-            //   flow.emit(vX, continuation)
-            // Replace vX with SafeX's filtered List immediately after the load.
-            // -----------------------------------------------------------------
+            // Fresh network/model path. X 12.7.1 g.b() loads the result field
+            // Lcom/x/repositories/urt/z$a;->b:ArrayList and emits that same
+            // register to the generic URT flow. Replace that register first.
             SafeXFreshUrtListFingerprint.method.apply {
                 val freshIndex = instructions.indexOfLast { instruction ->
                     if (instruction.opcode != Opcode.IGET_OBJECT) return@indexOfLast false
@@ -116,7 +111,7 @@ val safeXPatch =
                         reference.type == "Ljava/util/ArrayList;"
                 }
                 check(freshIndex >= 0) {
-                    "SafeX: could not find fresh URT z$a.b list in X 12.7.1"
+                    "SafeX: could not find fresh URT result list in X 12.7.1"
                 }
 
                 val listRegister =
@@ -130,12 +125,8 @@ val safeXPatch =
                 )
             }
 
-            // -----------------------------------------------------------------
-            // Database/cache hydration path.
-            // Exact X 12.7.1 target in e$b$a.emit(): the first check-cast List is
-            // the list received from the DB flow. Filter that same register before
-            // X iterates it or performs module/spacing work.
-            // -----------------------------------------------------------------
+            // Database/cache hydration path. In X 12.7.1 e$b$a.emit(), the
+            // first check-cast List is the list received from the DB flow.
             SafeXCachedUrtListFingerprint.method.apply {
                 val cachedIndex = instructions.indexOfFirst { instruction ->
                     if (instruction.opcode != Opcode.CHECK_CAST) return@indexOfFirst false
