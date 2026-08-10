@@ -27,7 +27,7 @@ jobs:
       - name: Build with Gradle
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew clean buildAndroid
+        run: ./gradlew clean buildAndroid :patches:checkSafeXSmali
 
       - name: Upload Morphe patch bundle
         uses: actions/upload-artifact@v4
