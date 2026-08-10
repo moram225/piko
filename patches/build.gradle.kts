@@ -29,6 +29,15 @@ tasks {
         mainClass.set("app.morphe.util.resource.CheckStringKt")
     }
 
+    register<JavaExec>("checkSafeXSmali") {
+        description = "Compiles SafeX high-register inline smali used by the cached URT hook"
+
+        dependsOn(compileKotlin)
+
+        classpath = sourceSets["main"].runtimeClasspath
+        mainClass.set("app.crimera.util.SafeXSmaliCheckKt")
+    }
+
     register<JavaExec>("generatePatchesList") {
         description = "Build patch with patch list"
 
