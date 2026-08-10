@@ -15,12 +15,10 @@ import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.instructions
 import app.morphe.patcher.patch.bytecodePatch
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.formats.Instruction35c
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
-import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 
 private const val SAFEX =
     "Lapp/morphe/extension/twitter/safex/SafeXRuntime;"
@@ -171,27 +169,25 @@ val safeXPatch =
                 )
             }
 
-            // Database/cache hydration path. p0 is the collector object whose
-            // private field `b` points back to the same URT repository; the
-            // extension resolves that relation reflectively.
+            // Database/cache hydration path. In this instance method p0 is the
+            // collector and p1 is exactly the Object that was just CHECK_CAST to
+            // java.util.List. These parameters are contiguous. Using /range is
+            // required because this coroutine has enough local registers that
+            // p0 cannot be encoded by the normal 35c invoke form on-device.
             SafeXCachedUrtListFingerprint.method.apply {
                 val cachedIndex = instructions.indexOfFirst { instruction ->
-                    if (instruction.opcode != Opcode.CHECK_CAST) return@indexOfFirst false
-                    val reference =
-                        (instruction as? ReferenceInstruction)?.reference as? TypeReference
-                    reference?.type == "Ljava/util/List;"
+                    instruction.opcode == Opcode.CHECK_CAST &&
+                        (instruction as? ReferenceInstruction)?.reference.toString() == "Ljava/util/List;"
                 }
                 check(cachedIndex >= 0) {
                     "SafeX: could not find cached URT List cast in X 12.7.1"
                 }
 
-                val listRegister =
-                    getInstruction<OneRegisterInstruction>(cachedIndex).registerA
                 addInstructions(
                     cachedIndex + 1,
                     """
-                    invoke-static {p0, v$listRegister}, $SAFEX_LIST->filterCachedItems(Ljava/lang/Object;Ljava/util/List;)Ljava/util/List;
-                    move-result-object v$listRegister
+                    invoke-static/range {p0 .. p1}, $SAFEX_LIST->filterCachedItems(Ljava/lang/Object;Ljava/util/List;)Ljava/util/List;
+                    move-result-object p1
                     """.trimIndent(),
                 )
             }
