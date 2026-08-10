@@ -8,16 +8,22 @@ import app.morphe.extension.twitter.safex.core.FeatureExtractor;
 import app.morphe.extension.twitter.safex.core.PostFeatures;
 import app.morphe.extension.twitter.safex.core.SafeXLearner;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  * SafeX runtime state and learning policy.
  *
- * v0.4 deliberately keeps classification independent of X's transport layer.
- * Modern X can supply a post from network, Apollo/other caches, X's local DB,
- * search, a module, a quote, or a repost. The modern UI/model hook passes the
- * final post object here immediately before rendering.
+ * v0.6 keeps automatic classification post-local, but adds a separate search
+ * query risk check. A high-risk search query never becomes training evidence;
+ * it is only contextual information used to stop visual NSFW search results
+ * that X itself incorrectly labels as non-sensitive.
  */
 @SuppressWarnings("unused")
 public final class SafeXRuntime {
+    private static final Pattern QUERY_TOKEN =
+            Pattern.compile("(?iu)[\\p{L}\\p{N}_]{2,80}");
+
     private static volatile boolean enabled;
     private static volatile AndroidFeatureRepository repository;
     private static volatile SafeXLearner learner;
@@ -77,9 +83,46 @@ public final class SafeXRuntime {
             return decision.block;
         } catch (Throwable t) {
             PikoUtils.logger(t);
-            // Learned-classifier failures fail open. Native X sensitivity is
-            // handled before this catch whenever we can read it successfully.
             return xSensitive;
+        }
+    }
+
+    /**
+     * Returns true only for clearly high-risk search queries.
+     *
+     * In addition to scoring the raw query, every token is also evaluated as a
+     * hashtag family. This means searches such as `momson` and `chudai` inherit
+     * the same mutation-aware protection as `#momson` / `#chudai`, while weak
+     * contextual families such as `teen` remain below the block threshold.
+     *
+     * This method never updates the learner.
+     */
+    public static boolean isHighRiskSearchQuery(String rawQuery) {
+        if (rawQuery == null || rawQuery.trim().isEmpty()) return false;
+        if (!enabled) enable();
+
+        try {
+            ensureInit();
+            Decision raw = learner.score(extractor.extract(rawQuery));
+            if (raw.block) return true;
+
+            Matcher matcher = QUERY_TOKEN.matcher(FeatureExtractor.normalize(rawQuery));
+            while (matcher.find()) {
+                String token = matcher.group();
+                // Search operators and generic glue words should not become
+                // synthetic hashtags.
+                if ("from".equals(token) || "to".equals(token)
+                        || "filter".equals(token) || "since".equals(token)
+                        || "until".equals(token) || "lang".equals(token)) {
+                    continue;
+                }
+                Decision asHashtag = learner.score(extractor.extract("#" + token));
+                if (asHashtag.block) return true;
+            }
+            return false;
+        } catch (Throwable t) {
+            PikoUtils.logger(t);
+            return false;
         }
     }
 
@@ -101,9 +144,7 @@ public final class SafeXRuntime {
         }
     }
 
-    // Compatibility wrappers for the retired v0.3 response-filter class. v0.4
-    // does not wire that network hook, but keeping these avoids stale extension
-    // linkage if a developer compares/builds intermediate commits.
+    // Compatibility wrappers for the retired response-filter experiment.
     public static boolean classifyNetworkPost(long postId, String classifierText, boolean xSensitive) {
         return classifyPost(postId, classifierText, xSensitive);
     }
