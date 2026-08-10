@@ -1,13 +1,12 @@
 package app.crimera.patches.twitter.safex
 
-import app.crimera.patches.twitter.ads.timelineEntryHook.timelineEntryHookPatch
-import app.crimera.patches.twitter.entity.tweet.TweetObjectFingerprint
 import app.crimera.patches.twitter.entity.tweet.tweetEntityPatch
 import app.crimera.patches.twitter.misc.settings.SettingsStatusLoadFingerprint
 import app.crimera.patches.twitter.misc.settings.settingsPatch
 import app.crimera.patches.twitter.misc.shareMenu.fingerprints.ActionEnumsFingerprint
 import app.crimera.patches.twitter.misc.shareMenu.hooks.ShareMenuButtonAddHook
 import app.crimera.patches.twitter.misc.shareMenu.hooks.setButtonText
+import app.crimera.patches.twitter.misc.shareMenu.hooks.shareMenuButtonOnClickHook
 import app.crimera.patches.twitter.utils.Constants.COMPATIBILITY_X
 import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
@@ -19,86 +18,76 @@ import com.android.tools.smali.dexlib2.iface.instruction.formats.Instruction35c
 
 private const val SAFEX =
     "Lapp/morphe/extension/twitter/safex/SafeXRuntime;"
+private const val SAFEX_RESPONSE =
+    "Lapp/morphe/extension/twitter/safex/SafeXResponseFilter;"
+private const val JACKSON_CLASS = "/fasterxml/jackson/core/"
 
-private object SafeXSensitiveWarningFingerprint : Fingerprint(
-    definingClass = "Lcom/twitter/model/json/core/JsonSensitiveMediaWarning\$\$JsonObjectMapper;",
-    name = "parse",
-    returnType = "Ljava/lang/Object",
+/**
+ * Same stable Jackson InputStream path Piko uses for its server-response logger.
+ * SafeX modifies the JSON stream before X's model deserializers see it.
+ */
+private object SafeXInputStreamFingerprint : Fingerprint(
+    definingClass = JACKSON_CLASS,
+    parameters = listOf("Ljava/io/InputStream"),
+    custom = { methodDef, _ ->
+        methodDef.returnType.contains(JACKSON_CLASS)
+    },
 )
 
-private object SafeXTimelineEntryFingerprint : Fingerprint(
-    definingClass = "Lcom/twitter/model/json/timeline/urt/JsonTimelineEntry\$\$JsonObjectMapper;",
-    name = "parse",
-    returnType = "Ljava/lang/Object",
-)
-
-private object SafeXTimelineModuleItemFingerprint : Fingerprint(
-    definingClass = "Lcom/twitter/model/json/timeline/urt/JsonTimelineModuleItem\$\$JsonObjectMapper;",
-    name = "parse",
-    returnType = "Ljava/lang/Object",
+/**
+ * X 12.7.1 modern UI setting. SafeX always reports "do not display sensitive
+ * media" locally. This is a backstop; the primary mechanism removes flagged
+ * timeline entries from the GraphQL response itself.
+ */
+private object SafeXAccountSensitiveMediaFingerprint : Fingerprint(
+    definingClass = "Lcom/x/models/AccountSettings;",
+    name = "getDisplaySensitiveMedia",
+    returnType = "Ljava/lang/Boolean;",
+    parameters = emptyList(),
 )
 
 @Suppress("unused")
 val safeXPatch =
     bytecodePatch(
         name = "SafeX: remove NSFW posts",
-        description = "Drops X-sensitive posts before rendering and learns local text/hashtag indicators.",
+        description = "Removes X-sensitive posts from GraphQL before rendering and learns local text/hashtag indicators.",
         default = true,
     ) {
         compatibleWith(COMPATIBILITY_X)
         dependsOn(
             settingsPatch,
             tweetEntityPatch,
-            timelineEntryHookPatch,
+            shareMenuButtonOnClickHook,
         )
 
         execute {
+            // Enable early during normal Piko startup.
             SettingsStatusLoadFingerprint.method.addInstruction(
                 0,
                 "invoke-static {}, $SAFEX->enable()V",
             )
 
-            listOf(
-                SafeXTimelineEntryFingerprint.method,
-                SafeXTimelineModuleItemFingerprint.method,
-            ).forEach { method ->
-                method.addInstruction(
-                    0,
-                    "invoke-static {}, $SAFEX->beginEntry()V",
-                )
+            // The response filter calls enable() again before its first use so
+            // cached/startup ordering cannot leave SafeX inactive.
+            SafeXInputStreamFingerprint.method.addInstructions(
+                0,
+                """
+                invoke-static {p1}, $SAFEX_RESPONSE->filterInputStream(Ljava/io/InputStream;)Ljava/io/InputStream;
+                move-result-object p1
+                """.trimIndent(),
+            )
 
-                val returnIndex =
-                    method.instructions.last { it.opcode == Opcode.RETURN_OBJECT }.location.index
+            // Native X safety backstop: never tell the app that sensitive media
+            // is allowed to display while SafeX is installed.
+            SafeXAccountSensitiveMediaFingerprint.method.addInstructions(
+                0,
+                """
+                sget-object p0, Ljava/lang/Boolean;->FALSE:Ljava/lang/Boolean;
+                return-object p0
+                """.trimIndent(),
+            )
 
-                method.addInstructions(
-                    returnIndex,
-                    """
-                    invoke-static {p1}, $SAFEX->finishEntry(Ljava/lang/Object;)Ljava/lang/Object;
-                    move-result-object p1
-                    """.trimIndent(),
-                )
-            }
-
-            SafeXSensitiveWarningFingerprint.method.apply {
-                val returnIndex =
-                    instructions.last { it.opcode == Opcode.RETURN_OBJECT }.location.index
-                addInstructions(
-                    returnIndex,
-                    "invoke-static {p1}, $SAFEX->observeSensitiveWarning(Ljava/lang/Object;)V",
-                )
-            }
-
-            TweetObjectFingerprint.classDef.methods
-                .filter { it.name == "<init>" }
-                .forEach { constructor ->
-                    val returnIndex =
-                        constructor.instructions.last { it.opcode == Opcode.RETURN_VOID }.location.index
-                    constructor.addInstructions(
-                        returnIndex,
-                        "invoke-static {p0}, $SAFEX->observeTweet(Ljava/lang/Object;)V",
-                    )
-                }
-
+            // Three-dot menu: reuse X's existing action slot but relabel it.
             setButtonText(
                 "MarkTweetPossiblySensitive",
                 "safex_mark_nsfw",
