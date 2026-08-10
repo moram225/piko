@@ -57,10 +57,11 @@ public final class SafeXResponseFilter {
     public static InputStream filterInputStream(InputStream inputStream) {
         if (inputStream == null) return null;
 
+        byte[] original = null;
         try {
             SafeXRuntime.enable();
 
-            byte[] original = readAll(inputStream);
+            original = readAll(inputStream);
             if (original.length == 0 || original.length > MAX_JSON_BYTES) {
                 return new ByteArrayInputStream(original);
             }
@@ -92,13 +93,11 @@ public final class SafeXResponseFilter {
             return new ByteArrayInputStream(filtered);
         } catch (Throwable t) {
             PikoUtils.logger(t);
-            // Never damage X networking because our parser failed. The caller
-            // receives a replacement stream whenever possible.
-            try {
-                return inputStream;
-            } catch (Throwable ignored) {
-                return null;
-            }
+            // The original stream may already be consumed. Always recreate it
+            // from captured bytes when available so SafeX cannot break X's JSON
+            // parser merely because our filter encountered an unexpected shape.
+            if (original != null) return new ByteArrayInputStream(original);
+            return inputStream;
         }
     }
 
