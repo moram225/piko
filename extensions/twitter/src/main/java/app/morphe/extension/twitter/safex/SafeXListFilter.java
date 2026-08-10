@@ -10,24 +10,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * SafeX v0.5 list-level filter for X 12.7.1.
+ * SafeX v0.6 list-level filter for X 12.7.1.
  *
- * The important difference from the earlier renderer experiment is that this
- * class removes UrtTimelinePost objects from the List BEFORE the downstream
- * flow/Compose code receives them. It is called from both the fresh-network
- * URT repository path and the database/cache hydration path.
- *
- * Non-post items are preserved. Modules are rebuilt with blocked children
- * removed. If rebuilding a changed module unexpectedly fails, the complete
- * module is dropped rather than allowing a known blocked child through.
+ * Removes UrtTimelinePost objects before downstream flow/Compose sees them.
+ * Both fresh and cached paths receive their owning URT repository so Search
+ * query context can be resolved without contaminating the learner.
  */
 @SuppressWarnings({"unused", "rawtypes", "unchecked"})
 public final class SafeXListFilter {
-    public static final String BUILD_MARKER = "SafeX-v0.5-urt-list-filter";
+    public static final String BUILD_MARKER = "SafeX-v0.6-search-safety";
 
     private static final String DIAGNOSTIC_FILE = "SafeX-Diagnostics.txt";
     private static final String DIAGNOSTIC_FOLDER = "SafeX";
-    private static final int MAX_DIAGNOSTIC_LINES = 1200;
+    private static final int MAX_DIAGNOSTIC_LINES = 1600;
 
     private static final Map<String, Method> METHOD_CACHE = new ConcurrentHashMap<>();
     private static final Map<String, Boolean> MISSING_METHODS = new ConcurrentHashMap<>();
@@ -45,24 +40,41 @@ public final class SafeXListFilter {
         int modulesChanged;
         int moduleChildrenRemoved;
         int errors;
+        boolean searchContext;
+        boolean queryRisk;
     }
 
+    public static List filterNetworkItems(Object owner, List items) {
+        String query = SafeXSearchContext.queryForOwner(owner);
+        return filterItems(items, "network", networkCalls.incrementAndGet(), query);
+    }
+
+    public static List filterCachedItems(Object owner, List items) {
+        String query = SafeXSearchContext.queryForOwner(owner);
+        return filterItems(items, "cache", cacheCalls.incrementAndGet(), query);
+    }
+
+    // Compatibility with intermediate development builds. v0.6 bytecode uses
+    // the two-argument overloads above.
     public static List filterNetworkItems(List items) {
-        return filterItems(items, "network", networkCalls.incrementAndGet());
+        return filterItems(items, "network-legacy", networkCalls.incrementAndGet(), "");
     }
 
     public static List filterCachedItems(List items) {
-        return filterItems(items, "cache", cacheCalls.incrementAndGet());
+        return filterItems(items, "cache-legacy", cacheCalls.incrementAndGet(), "");
     }
 
-    private static List filterItems(List items, String source, int callNumber) {
+    private static List filterItems(List items, String source, int callNumber, String searchQuery) {
+        SafeXRuntime.enable();
+        Stats stats = new Stats();
+        stats.searchContext = searchQuery != null && !searchQuery.trim().isEmpty();
+        stats.queryRisk = stats.searchContext && SafeXRuntime.isHighRiskSearchQuery(searchQuery);
+
         if (items == null || items.isEmpty()) {
-            diagnosticList(source, callNumber, new Stats());
+            diagnosticList(source, callNumber, stats);
             return items;
         }
 
-        SafeXRuntime.enable();
-        Stats stats = new Stats();
         stats.inputItems = items.size();
 
         try {
@@ -72,11 +84,10 @@ public final class SafeXListFilter {
             for (Object item : items) {
                 Object filtered;
                 try {
-                    filtered = filterTimelineItem(item, stats, 0);
+                    filtered = filterTimelineItem(item, stats, 0, searchQuery);
                 } catch (Throwable t) {
                     stats.errors++;
                     PikoUtils.logger(t);
-                    // A generic filter failure should not corrupt X's timeline.
                     filtered = item;
                 }
 
@@ -99,13 +110,13 @@ public final class SafeXListFilter {
         }
     }
 
-    private static Object filterTimelineItem(Object item, Stats stats, int depth) {
+    private static Object filterTimelineItem(Object item, Stats stats, int depth, String searchQuery) {
         if (item == null || depth > 5) return item;
 
         String name = item.getClass().getName();
         if (name.endsWith("UrtTimelinePost")) {
             stats.postsSeen++;
-            if (SafeXModern.shouldRemoveTimelineItem(item)) {
+            if (SafeXModern.shouldRemoveTimelineItem(item, searchQuery)) {
                 stats.postsRemoved++;
                 return null;
             }
@@ -114,7 +125,7 @@ public final class SafeXListFilter {
 
         if (name.endsWith("UrtTimelineModule")) {
             stats.modulesSeen++;
-            return filterModule(item, stats, depth + 1);
+            return filterModule(item, stats, depth + 1, searchQuery);
         }
 
         return item;
@@ -122,10 +133,9 @@ public final class SafeXListFilter {
 
     /**
      * UrtTimelineModule.innerContent is a List<UrtTimelineModuleItem> in X
-     * 12.7.1. The public copy(...) method allows us to preserve all module
-     * metadata while replacing only that child list.
+     * 12.7.1. Rebuild only modules whose children changed.
      */
-    private static Object filterModule(Object module, Stats stats, int depth) {
+    private static Object filterModule(Object module, Stats stats, int depth, String searchQuery) {
         Object rawInner = callNoArg(module, "getInnerContent");
         if (!(rawInner instanceof List)) return module;
 
@@ -143,14 +153,13 @@ public final class SafeXListFilter {
 
             Object child = callNoArg(wrapper, "getItem");
             if (child == null) {
-                // Unknown module-item shape: preserve rather than guessing.
                 filteredChildren.add(wrapper);
                 continue;
             }
 
             Object filteredChild;
             try {
-                filteredChild = filterTimelineItem(child, stats, depth + 1);
+                filteredChild = filterTimelineItem(child, stats, depth + 1, searchQuery);
             } catch (Throwable t) {
                 stats.errors++;
                 PikoUtils.logger(t);
@@ -169,15 +178,12 @@ public final class SafeXListFilter {
                 continue;
             }
 
-            // Nested module changed. Rebuild its UrtTimelineModuleItem wrapper.
             Object dispensable = callNoArg(wrapper, "isDispensable");
             Object copiedWrapper = callByArity(wrapper, "copy", 2, filteredChild, dispensable);
             if (copiedWrapper != null) {
                 changed = true;
                 filteredChildren.add(copiedWrapper);
             } else {
-                // We know the original wrapper contains a changed/blocked
-                // descendant. Strict behavior is safer than restoring it.
                 changed = true;
                 stats.moduleChildrenRemoved++;
                 diagnostic("module-wrapper-copy-failed class=" + wrapper.getClass().getName());
@@ -187,9 +193,7 @@ public final class SafeXListFilter {
         if (!changed) return module;
         stats.modulesChanged++;
 
-        if (filteredChildren.isEmpty()) {
-            return null;
-        }
+        if (filteredChildren.isEmpty()) return null;
 
         Object replacement = callByArity(
                 module,
@@ -206,9 +210,6 @@ public final class SafeXListFilter {
 
         if (replacement != null) return replacement;
 
-        // Do not restore an original module after we already proved that one of
-        // its children is blocked. Dropping the complete module is conservative
-        // and avoids an NSFW leak if X changes its data-class signature.
         diagnostic("module-copy-failed class=" + module.getClass().getName()
                 + " childrenBefore=" + inner.size()
                 + " childrenAfter=" + filteredChildren.size());
@@ -260,12 +261,11 @@ public final class SafeXListFilter {
 
     private static void diagnosticList(String source, int callNumber, Stats stats) {
         if (stats == null) return;
-        // First calls prove the hook is alive. Afterwards write only meaningful
-        // events or sparse heartbeats to avoid excessive storage writes.
-        boolean important = callNumber <= 5
+        boolean important = callNumber <= 8
                 || stats.postsRemoved > 0
                 || stats.moduleChildrenRemoved > 0
                 || stats.errors > 0
+                || stats.searchContext
                 || callNumber % 100 == 0;
         if (!important) return;
 
@@ -278,6 +278,8 @@ public final class SafeXListFilter {
                 + " modules=" + stats.modulesSeen
                 + " modulesChanged=" + stats.modulesChanged
                 + " moduleChildrenRemoved=" + stats.moduleChildrenRemoved
+                + " searchContext=" + stats.searchContext
+                + " queryRisk=" + stats.queryRisk
                 + " errors=" + stats.errors);
     }
 
