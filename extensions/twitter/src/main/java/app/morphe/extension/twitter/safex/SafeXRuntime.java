@@ -11,9 +11,10 @@ import app.morphe.extension.twitter.safex.core.SafeXLearner;
 /**
  * SafeX runtime state and learning policy.
  *
- * v0.3 intentionally does not mutate X's sensitive-media models. Automatic
- * filtering is driven by the raw GraphQL response, where X 12.7.1 exposes the
- * canonical post's possibly_sensitive flag and text before UI rendering.
+ * v0.4 deliberately keeps classification independent of X's transport layer.
+ * Modern X can supply a post from network, Apollo/other caches, X's local DB,
+ * search, a module, a quote, or a repost. The modern UI/model hook passes the
+ * final post object here immediately before rendering.
  */
 @SuppressWarnings("unused")
 public final class SafeXRuntime {
@@ -42,47 +43,51 @@ public final class SafeXRuntime {
     }
 
     /**
-     * Evaluates one post read from X's server response.
+     * Evaluate one concrete post object after X has produced its modern model.
      *
-     * Positive training sources:
-     * - X possibly_sensitive=true: +1.0
-     * - manual Mark as NSFW: +2.0 (handled separately)
-     *
-     * Auto predictions never train themselves.
+     * Rules:
+     * - X's own sensitive signal is a strong positive example (+1.0).
+     * - a previously manually/server-blocked post remains blocked everywhere.
+     * - a learned prediction may block, but never trains itself.
+     * - if an X-sensitive object has no usable ID, block it anyway but skip
+     *   persistence/training for that object.
      */
-    public static boolean classifyNetworkPost(long postId, String classifierText, boolean xSensitive) {
-        if (!enabled || postId == 0L) return false;
+    public static boolean classifyPost(long postId, String classifierText, boolean xSensitive) {
+        if (!enabled) enable();
 
         try {
             ensureInit();
-            PostFeatures features = extractor.extract(classifierText == null ? "" : classifierText);
+            String text = classifierText == null ? "" : classifierText;
+            PostFeatures features = extractor.extract(text);
 
             if (xSensitive) {
-                if (repository.markObserved(postId, "X_SENSITIVE")) {
-                    learner.observePositive(features, SafeXLearner.WEIGHT_X_SENSITIVE);
+                if (postId != 0L) {
+                    if (repository.markObserved(postId, "X_SENSITIVE")) {
+                        learner.observePositive(features, SafeXLearner.WEIGHT_X_SENSITIVE);
+                    }
+                    repository.blockTweet(postId, "X_SENSITIVE");
                 }
-                repository.blockTweet(postId, "X_SENSITIVE");
                 return true;
             }
 
-            // A manual block must remain effective when X serves the same post
-            // from another timeline, cache, search result, or quote.
-            if (repository.isTweetBlocked(postId)) return true;
+            if (postId != 0L && repository.isTweetBlocked(postId)) return true;
 
             Decision decision = learner.score(features);
-            // IMPORTANT: do not write AUTO_NSFW as positive evidence.
+            // IMPORTANT: automatic SafeX predictions are NEVER positive labels.
             return decision.block;
         } catch (Throwable t) {
             PikoUtils.logger(t);
-            return false;
+            // Learned-classifier failures fail open. Native X sensitivity is
+            // handled before this catch whenever we can read it successfully.
+            return xSensitive;
         }
     }
 
     /**
-     * Weak-negative evidence is committed only after the containing timeline
-     * entry survives the response filter.
+     * Commit weak negative evidence only after the complete post, including any
+     * quoted/reposted child, has survived SafeX classification.
      */
-    public static void observeNetworkSafe(long postId, String classifierText) {
+    public static void observeSafePost(long postId, String classifierText) {
         if (!enabled || postId == 0L) return;
 
         try {
@@ -96,17 +101,27 @@ public final class SafeXRuntime {
         }
     }
 
+    // Compatibility wrappers for the retired v0.3 response-filter class. v0.4
+    // does not wire that network hook, but keeping these avoids stale extension
+    // linkage if a developer compares/builds intermediate commits.
+    public static boolean classifyNetworkPost(long postId, String classifierText, boolean xSensitive) {
+        return classifyPost(postId, classifierText, xSensitive);
+    }
+
+    public static void observeNetworkSafe(long postId, String classifierText) {
+        observeSafePost(postId, classifierText);
+    }
+
     public static boolean isManualAction(Object buttonPressed) {
         return enabled
                 && buttonPressed != null
                 && "MarkTweetPossiblySensitive".equals(String.valueOf(buttonPressed));
     }
 
-    /**
-     * Called from the existing X three-dot post menu hook.
-     */
+    /** Called from X's existing three-dot post menu hook. */
     public static void markManualNsfw(Object tweetObj) {
-        if (!enabled || tweetObj == null) return;
+        if (!enabled) enable();
+        if (tweetObj == null) return;
 
         try {
             ensureInit();
