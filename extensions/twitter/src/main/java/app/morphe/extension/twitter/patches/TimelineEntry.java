@@ -12,6 +12,7 @@ import com.twitter.model.json.timeline.urt.JsonTimelineModuleItem;
 import app.morphe.extension.twitter.Pref;
 import app.morphe.extension.twitter.settings.SettingsStatus;
 import app.morphe.extension.twitter.entity.Video;
+import app.morphe.extension.twitter.safex.SafeXRuntime;
 import java.util.List;
 import java.util.ArrayList;
 import app.morphe.extension.crimera.PikoUtils;
@@ -103,6 +104,12 @@ public class TimelineEntry {
     }
     public static JsonSensitiveMediaWarning sensitiveMedia(JsonSensitiveMediaWarning jsonSensitiveMediaWarning) {
         try {
+            // SafeX is strict: even if "Show sensitive media" is accidentally
+            // selected or an old Piko preference remains enabled, never clear
+            // X's native warning flags while SafeX is active.
+            if (SafeXRuntime.isEnabled()) {
+                return jsonSensitiveMediaWarning;
+            }
             if(showSensitiveMedia){
                 jsonSensitiveMediaWarning.a = false;
                 jsonSensitiveMediaWarning.b = false;
