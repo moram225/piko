@@ -26,14 +26,12 @@ private const val SAFEX =
     "Lapp/morphe/extension/twitter/safex/SafeXRuntime;"
 private const val SAFEX_LIST =
     "Lapp/morphe/extension/twitter/safex/SafeXListFilter;"
+private const val SAFEX_SEARCH =
+    "Lapp/morphe/extension/twitter/safex/SafeXSearchContext;"
 
 /**
  * X 12.7.1's central modern URT repository. Fresh GraphQL items are mapped to
- * UrtTimelineItem objects and the z-state result ArrayList is emitted to the
- * timeline flow from this suspend method.
- *
- * Filtering here is materially earlier than Compose rendering: removed posts
- * never enter the emitted list.
+ * UrtTimelineItem objects and emitted from this suspend method.
  */
 private object SafeXFreshUrtListFingerprint : Fingerprint(
     definingClass = "Lcom/x/repositories/urt/g;",
@@ -48,14 +46,7 @@ private object SafeXFreshUrtListFingerprint : Fingerprint(
     ),
 )
 
-/**
- * X 12.7.1's central database/cache URT flow collector. The incoming Object is
- * cast to List at the beginning of emit() before filtering, module processing,
- * brand-safety spacing and downstream UI work.
- *
- * Hooking this path closes the major hole left by network-only filtering: posts
- * restored from X's local database/cache are filtered too.
- */
+/** X 12.7.1's central database/cache URT flow collector. */
 private object SafeXCachedUrtListFingerprint : Fingerprint(
     definingClass = "Lcom/x/repositories/urt/e\$b\$a;",
     name = "emit",
@@ -67,10 +58,37 @@ private object SafeXCachedUrtListFingerprint : Fingerprint(
 )
 
 /**
- * Native X safety backstop. SafeX removes posts at the model-list level, while
- * this ensures X itself is never configured to freely display sensitive media
- * on a surface that does not use the generic URT repository.
+ * Exact X 12.7.1 search repository constructor. p1 is rawQuery and field `a`
+ * is the generic com.x.repositories.urt.g instance used by the search timeline.
  */
+private object SafeXSearchRepositoryConstructorFingerprint : Fingerprint(
+    definingClass = "Lcom/x/repositories/search/l0;",
+    name = "<init>",
+    returnType = "V",
+    parameters = listOf(
+        "Ljava/lang/String;",
+        "Lcom/x/models/search/i;",
+        "Lcom/x/models/search/SearchType;",
+        "Lcom/x/models/search/AdvancedSearchFilters;",
+        "Lcom/x/clock/c;",
+        "Lcom/x/repositories/urt/g\$a;",
+        "Lcom/x/featureswitches/f0;",
+    ),
+)
+
+/**
+ * X's legacy Search safety model is still used by the search settings/API.
+ * Field `a` serializes as `optInFiltering`; field `b` is `optInBlocking`.
+ * SafeX forces filtering on but does not alter the unrelated blocking setting.
+ */
+private object SafeXSearchSafetyConstructorFingerprint : Fingerprint(
+    definingClass = "Lcom/twitter/model/search/c;",
+    name = "<init>",
+    returnType = "V",
+    parameters = listOf("Lcom/twitter/model/search/c\$a;"),
+)
+
+/** Native X sensitive-media display backstop. */
 private object SafeXAccountSensitiveMediaFingerprint : Fingerprint(
     definingClass = "Lcom/x/models/AccountSettings;",
     name = "getDisplaySensitiveMedia",
@@ -82,7 +100,7 @@ private object SafeXAccountSensitiveMediaFingerprint : Fingerprint(
 val safeXPatch =
     bytecodePatch(
         name = "SafeX: remove NSFW posts",
-        description = "Removes X-sensitive posts from fresh and cached modern URT lists before UI rendering and learns local text/hashtag indicators.",
+        description = "Forces X Search safety on and removes sensitive/learned NSFW posts from fresh and cached URT lists before rendering.",
         default = true,
     ) {
         compatibleWith(COMPATIBILITY_X)
@@ -98,9 +116,37 @@ val safeXPatch =
                 "invoke-static {}, $SAFEX->enable()V",
             )
 
-            // Fresh network/model path. X 12.7.1 g.b() loads the result field
-            // Lcom/x/repositories/urt/z$a;->b:ArrayList and emits that same
-            // register to the generic URT flow. Replace that register first.
+            // Register Search's generic URT repository together with the raw
+            // query. The runtime stores this in a WeakHashMap, so non-search URT
+            // repositories remain context-free and destroyed searches are not
+            // kept alive.
+            SafeXSearchRepositoryConstructorFingerprint.method.apply {
+                val returnIndex = instructions.last { it.opcode == Opcode.RETURN_VOID }.location.index
+                addInstructions(
+                    returnIndex,
+                    """
+                    iget-object v0, p0, Lcom/x/repositories/search/l0;->a:Lcom/x/repositories/urt/g;
+                    invoke-static {v0, p1}, $SAFEX_SEARCH->register(Ljava/lang/Object;Ljava/lang/String;)V
+                    """.trimIndent(),
+                )
+            }
+
+            // X Search has an independent safe-search preference. In this exact
+            // build c.a is optInFiltering and c.b is optInBlocking. Force only
+            // filtering to true after X initializes the object.
+            SafeXSearchSafetyConstructorFingerprint.method.apply {
+                val returnIndex = instructions.last { it.opcode == Opcode.RETURN_VOID }.location.index
+                addInstructions(
+                    returnIndex,
+                    """
+                    const/4 v0, 0x1
+                    iput-boolean v0, p0, Lcom/twitter/model/search/c;->a:Z
+                    """.trimIndent(),
+                )
+            }
+
+            // Fresh network/model path. Pass p0 (the generic URT repository) so
+            // the extension can resolve whether this list belongs to Search.
             SafeXFreshUrtListFingerprint.method.apply {
                 val freshIndex = instructions.indexOfLast { instruction ->
                     if (instruction.opcode != Opcode.IGET_OBJECT) return@indexOfLast false
@@ -119,14 +165,15 @@ val safeXPatch =
                 addInstructions(
                     freshIndex + 1,
                     """
-                    invoke-static {v$listRegister}, $SAFEX_LIST->filterNetworkItems(Ljava/util/List;)Ljava/util/List;
+                    invoke-static {p0, v$listRegister}, $SAFEX_LIST->filterNetworkItems(Ljava/lang/Object;Ljava/util/List;)Ljava/util/List;
                     move-result-object v$listRegister
                     """.trimIndent(),
                 )
             }
 
-            // Database/cache hydration path. In X 12.7.1 e$b$a.emit(), the
-            // first check-cast List is the list received from the DB flow.
+            // Database/cache hydration path. p0 is the collector object whose
+            // private field `b` points back to the same URT repository; the
+            // extension resolves that relation reflectively.
             SafeXCachedUrtListFingerprint.method.apply {
                 val cachedIndex = instructions.indexOfFirst { instruction ->
                     if (instruction.opcode != Opcode.CHECK_CAST) return@indexOfFirst false
@@ -143,15 +190,14 @@ val safeXPatch =
                 addInstructions(
                     cachedIndex + 1,
                     """
-                    invoke-static {v$listRegister}, $SAFEX_LIST->filterCachedItems(Ljava/util/List;)Ljava/util/List;
+                    invoke-static {p0, v$listRegister}, $SAFEX_LIST->filterCachedItems(Ljava/lang/Object;Ljava/util/List;)Ljava/util/List;
                     move-result-object v$listRegister
                     """.trimIndent(),
                 )
             }
 
-            // Native X fallback. If a completely different surface escapes both
-            // generic URT repository hooks, X should still keep sensitive media
-            // hidden rather than becoming more permissive.
+            // General X fallback: never configure a different surface to freely
+            // display sensitive media if it escapes the URT list hooks.
             SafeXAccountSensitiveMediaFingerprint.method.addInstructions(
                 0,
                 """
@@ -160,9 +206,6 @@ val safeXPatch =
                 """.trimIndent(),
             )
 
-            // Three-dot menu: reuse X's existing MarkTweetPossiblySensitive slot,
-            // relabel it, train locally, then the existing click hook remaps it
-            // to X's native IDontLikeThisTweet removal path.
             setButtonText(
                 "MarkTweetPossiblySensitive",
                 "safex_mark_nsfw",
