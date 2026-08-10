@@ -18,7 +18,7 @@ import app.morphe.extension.crimera.PikoUtils;
 
 public class TimelineEntry {
     public static final boolean hideAds;
-    private static final boolean hideWTF,hideCTS,hideCTJ,hideDetailedPosts,hideRBMK,hidePinnedPosts,hidePremiumPrompt,showSensitiveMedia,hideTopPeopleSearch,hideTodaysNews;
+    private static final boolean hideWTF,hideCTS,hideCTJ,hideDetailedPosts,hideRBMK,hidePinnedPosts,hidePremiumPrompt,hideTopPeopleSearch,hideTodaysNews;
     static {
         hideAds = (Pref.hideAds() && SettingsStatus.hideAds);
         hideWTF = (Pref.hideWTF() && SettingsStatus.hideWTF);
@@ -28,7 +28,6 @@ public class TimelineEntry {
         hideRBMK = (Pref.hideRBMK() && SettingsStatus.hideRBMK);
         hidePinnedPosts = (Pref.hideRPinnedPosts() && SettingsStatus.hideRPinnedPosts);
         hidePremiumPrompt = (Pref.hidePremiumPrompt() && SettingsStatus.hidePremiumPrompt);
-        showSensitiveMedia = Pref.showSensitiveMedia();
         hideTopPeopleSearch = (Pref.hideTopPeopleSearch() && SettingsStatus.hideTopPeopleSearch);
         hideTodaysNews = (Pref.hideTodaysNews() && SettingsStatus.hideTodaysNews);
     }
@@ -79,6 +78,7 @@ public class TimelineEntry {
         }
         return false;
     }
+
     public static JsonTimelineEntry checkEntry(JsonTimelineEntry jsonTimelineEntry) {
         try {
             String entryId = jsonTimelineEntry.a;
@@ -86,10 +86,10 @@ public class TimelineEntry {
                 return null;
             }
         } catch (Exception unused) {
-
         }
         return jsonTimelineEntry;
     }
+
     public static JsonTimelineModuleItem checkEntry(JsonTimelineModuleItem jsonTimelineModuleItem) {
         try {
             String entryId = jsonTimelineModuleItem.a;
@@ -97,22 +97,19 @@ public class TimelineEntry {
                 return null;
             }
         } catch (Exception unused) {
-
         }
         return jsonTimelineModuleItem;
     }
-    public static JsonSensitiveMediaWarning sensitiveMedia(JsonSensitiveMediaWarning jsonSensitiveMediaWarning) {
-        try {
-            if(showSensitiveMedia){
-                jsonSensitiveMediaWarning.a = false;
-                jsonSensitiveMediaWarning.b = false;
-                jsonSensitiveMediaWarning.c = false;
-            }
-        } catch (Exception unused) {
 
-        }
+    /**
+     * SafeX bundle invariant: NEVER clear X's native sensitive-media flags.
+     * The upstream Piko bundle may offer that behavior; this private SafeX
+     * bundle intentionally cannot, regardless of startup order/preferences.
+     */
+    public static JsonSensitiveMediaWarning sensitiveMedia(JsonSensitiveMediaWarning jsonSensitiveMediaWarning) {
         return jsonSensitiveMediaWarning;
     }
+
     public static boolean hidePromotedTrend(Object data) {
         if (data != null && hideAds) {
             return true;
@@ -141,7 +138,6 @@ public class TimelineEntry {
                     return result;
                 }
             }
-
         }catch(Exception ex){
             PikoUtils.logger(ex);
         }

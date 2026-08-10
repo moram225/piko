@@ -2,12 +2,12 @@ group = "crimera"
 
 patches {
     about {
-        name = "Piko"
-        description = "Morphe patches focused on Twitter/X"
-        source = "git@github.com:crimera/piko.git"
-        author = "crimera"
+        name = "SafeX Piko"
+        description = "Piko with SafeX adaptive NSFW filtering for X"
+        source = "git@github.com:moram225/piko.git"
+        author = "moram225 (SafeX) / crimera (Piko upstream)"
         contact = "na"
-        website = "https://github.com/crimera/piko"
+        website = "https://github.com/moram225/piko"
         license = "GNU General Public License v3.0"
     }
 }
