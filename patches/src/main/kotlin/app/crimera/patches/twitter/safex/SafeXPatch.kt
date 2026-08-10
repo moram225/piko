@@ -11,52 +11,65 @@ import app.crimera.patches.twitter.utils.Constants.COMPATIBILITY_X
 import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
-import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
+import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.instructions
 import app.morphe.patcher.patch.bytecodePatch
-import app.morphe.patcher.util.smali.ExternalLabel
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.formats.Instruction35c
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 
 private const val SAFEX =
     "Lapp/morphe/extension/twitter/safex/SafeXRuntime;"
-private const val SAFEX_MODERN =
-    "Lapp/morphe/extension/twitter/safex/SafeXModern;"
+private const val SAFEX_LIST =
+    "Lapp/morphe/extension/twitter/safex/SafeXListFilter;"
 
 /**
- * Modern X 12.7.1 top-level URT LazyList item content lambda.
- * Its field `a` is the final UrtTimelineItem that X is about to render.
+ * X 12.7.1's central modern URT repository. Fresh GraphQL items are mapped to
+ * UrtTimelineItem objects and the `z$a.b` ArrayList is emitted to the timeline
+ * flow from this suspend method.
+ *
+ * Filtering here is materially earlier than Compose rendering: removed posts
+ * never enter the emitted list.
  */
-private object SafeXTopLevelUrtRendererFingerprint : Fingerprint(
-    definingClass = "Lcom/x/urt/ui/r0;",
-    name = "invoke",
+private object SafeXFreshUrtListFingerprint : Fingerprint(
+    definingClass = "Lcom/x/repositories/urt/g;",
+    name = "b",
     returnType = "Ljava/lang/Object;",
     parameters = listOf(
-        "Ljava/lang/Object;",
-        "Ljava/lang/Object;",
-        "Ljava/lang/Object;",
+        "Lcom/x/android/main/fragment/he;",
+        "Z",
+        "Lcom/x/models/timelines/items/UrtTimelineCursor;",
+        "Lcom/x/models/timelines/a;",
+        "Lkotlin/coroutines/jvm/internal/ContinuationImpl;",
     ),
 )
 
 /**
- * Modern X 12.7.1 module-item content lambda. Module children take a separate
- * rendering path from top-level items, so both paths must be guarded.
+ * X 12.7.1's central database/cache URT flow collector. The incoming Object is
+ * cast to List at the beginning of emit() before filtering, module processing,
+ * brand-safety spacing and downstream UI work.
+ *
+ * Hooking this path closes the major hole left by network-only filtering: posts
+ * restored from X's local database/cache are filtered too.
  */
-private object SafeXModuleUrtRendererFingerprint : Fingerprint(
-    definingClass = "Lcom/x/urt/ui/module/h;",
-    name = "invoke",
+private object SafeXCachedUrtListFingerprint : Fingerprint(
+    definingClass = "Lcom/x/repositories/urt/e\$b\$a;",
+    name = "emit",
     returnType = "Ljava/lang/Object;",
     parameters = listOf(
         "Ljava/lang/Object;",
-        "Ljava/lang/Object;",
-        "Ljava/lang/Object;",
+        "Lkotlin/coroutines/Continuation;",
     ),
 )
 
 /**
- * Native X setting backstop. The actual post removal happens at the modern URT
- * renderer, but this ensures X itself is never configured to freely display
- * sensitive media if another surface escapes the renderer hooks.
+ * Native X safety backstop. SafeX removes posts at the model-list level, while
+ * this ensures X itself is never configured to freely display sensitive media
+ * on a surface that does not use the generic URT repository.
  */
 private object SafeXAccountSensitiveMediaFingerprint : Fingerprint(
     definingClass = "Lcom/x/models/AccountSettings;",
@@ -69,7 +82,7 @@ private object SafeXAccountSensitiveMediaFingerprint : Fingerprint(
 val safeXPatch =
     bytecodePatch(
         name = "SafeX: remove NSFW posts",
-        description = "Removes X-sensitive modern URT posts immediately before rendering and learns local text/hashtag indicators.",
+        description = "Removes X-sensitive posts from fresh and cached modern URT lists before UI rendering and learns local text/hashtag indicators.",
         default = true,
     ) {
         compatibleWith(COMPATIBILITY_X)
@@ -85,41 +98,69 @@ val safeXPatch =
                 "invoke-static {}, $SAFEX->enable()V",
             )
 
-            // Network-only filtering is deliberately NOT used in v0.4. X can
-            // hydrate these same modern models from caches/local storage. The
-            // final renderer is the convergence point for those data sources.
-            SafeXTopLevelUrtRendererFingerprint.method.apply {
-                val originalFirst = instructions.first()
-                addInstructionsWithLabels(
-                    0,
+            // -----------------------------------------------------------------
+            // Fresh network/model path.
+            // Exact X 12.7.1 target in g.b():
+            //   iget-object vX, ..., Lcom/x/repositories/urt/z$a;->b:ArrayList
+            //   ...
+            //   flow.emit(vX, continuation)
+            // Replace vX with SafeX's filtered List immediately after the load.
+            // -----------------------------------------------------------------
+            SafeXFreshUrtListFingerprint.method.apply {
+                val freshIndex = instructions.indexOfLast { instruction ->
+                    if (instruction.opcode != Opcode.IGET_OBJECT) return@indexOfLast false
+                    val reference =
+                        (instruction as? ReferenceInstruction)?.reference as? FieldReference
+                    reference?.definingClass == "Lcom/x/repositories/urt/z\$a;" &&
+                        reference.name == "b" &&
+                        reference.type == "Ljava/util/ArrayList;"
+                }
+                check(freshIndex >= 0) {
+                    "SafeX: could not find fresh URT z$a.b list in X 12.7.1"
+                }
+
+                val listRegister =
+                    getInstruction<TwoRegisterInstruction>(freshIndex).registerA
+                addInstructions(
+                    freshIndex + 1,
                     """
-                    iget-object v0, p0, Lcom/x/urt/ui/r0;->a:Lcom/x/models/timelines/items/UrtTimelineItem;
-                    invoke-static {v0}, $SAFEX_MODERN->shouldRemoveTimelineItem(Ljava/lang/Object;)Z
-                    move-result v0
-                    if-eqz v0, :safex_continue
-                    sget-object v0, Lkotlin/Unit;->a:Lkotlin/Unit;
-                    return-object v0
+                    invoke-static {v$listRegister}, $SAFEX_LIST->filterNetworkItems(Ljava/util/List;)Ljava/util/List;
+                    move-result-object v$listRegister
                     """.trimIndent(),
-                    ExternalLabel("safex_continue", originalFirst),
                 )
             }
 
-            SafeXModuleUrtRendererFingerprint.method.apply {
-                val originalFirst = instructions.first()
-                addInstructionsWithLabels(
-                    0,
+            // -----------------------------------------------------------------
+            // Database/cache hydration path.
+            // Exact X 12.7.1 target in e$b$a.emit(): the first check-cast List is
+            // the list received from the DB flow. Filter that same register before
+            // X iterates it or performs module/spacing work.
+            // -----------------------------------------------------------------
+            SafeXCachedUrtListFingerprint.method.apply {
+                val cachedIndex = instructions.indexOfFirst { instruction ->
+                    if (instruction.opcode != Opcode.CHECK_CAST) return@indexOfFirst false
+                    val reference =
+                        (instruction as? ReferenceInstruction)?.reference as? TypeReference
+                    reference?.type == "Ljava/util/List;"
+                }
+                check(cachedIndex >= 0) {
+                    "SafeX: could not find cached URT List cast in X 12.7.1"
+                }
+
+                val listRegister =
+                    getInstruction<OneRegisterInstruction>(cachedIndex).registerA
+                addInstructions(
+                    cachedIndex + 1,
                     """
-                    iget-object v0, p0, Lcom/x/urt/ui/module/h;->a:Lcom/x/models/timelines/items/UrtTimelineItem;
-                    invoke-static {v0}, $SAFEX_MODERN->shouldRemoveTimelineItem(Ljava/lang/Object;)Z
-                    move-result v0
-                    if-eqz v0, :safex_continue
-                    sget-object v0, Lkotlin/Unit;->a:Lkotlin/Unit;
-                    return-object v0
+                    invoke-static {v$listRegister}, $SAFEX_LIST->filterCachedItems(Ljava/util/List;)Ljava/util/List;
+                    move-result-object v$listRegister
                     """.trimIndent(),
-                    ExternalLabel("safex_continue", originalFirst),
                 )
             }
 
+            // Native X fallback. If a completely different surface escapes both
+            // generic URT repository hooks, X should still keep sensitive media
+            // hidden rather than becoming more permissive.
             SafeXAccountSensitiveMediaFingerprint.method.addInstructions(
                 0,
                 """
@@ -128,7 +169,7 @@ val safeXPatch =
                 """.trimIndent(),
             )
 
-            // Three-dot menu: reuse X's native MarkTweetPossiblySensitive slot,
+            // Three-dot menu: reuse X's existing MarkTweetPossiblySensitive slot,
             // relabel it, train locally, then the existing click hook remaps it
             // to X's native IDontLikeThisTweet removal path.
             setButtonText(
