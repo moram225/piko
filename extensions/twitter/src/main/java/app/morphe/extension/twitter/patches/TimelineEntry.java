@@ -100,6 +100,9 @@ public class TimelineEntry {
         } catch (Exception ignored) {
         }
         if (safeXSensitive) {
+            // Diagnostics: proves the drop happened at the entry-parse stage.
+            // Deliberately logs no post text, media or author information.
+            android.util.Log.d("SafeX", "sensitive entry dropped (total=" + SafeX.recordDrop() + ")");
             return null;
         }
         return jsonTimelineEntry;
@@ -114,6 +117,7 @@ public class TimelineEntry {
         } catch (Exception ignored) {
         }
         if (safeXSensitive) {
+            android.util.Log.d("SafeX", "sensitive module item dropped (total=" + SafeX.recordDrop() + ")");
             return null;
         }
         return jsonTimelineModuleItem;

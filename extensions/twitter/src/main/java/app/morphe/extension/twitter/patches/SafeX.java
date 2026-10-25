@@ -19,7 +19,22 @@ package app.morphe.extension.twitter.patches;
 import com.twitter.model.json.core.JsonMediaEntity;
 import com.twitter.model.json.core.JsonSensitiveMediaWarning;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 public final class SafeX {
+
+    /** Number of entries dropped since process start; diagnostics only. */
+    private static final AtomicInteger DROPPED = new AtomicInteger();
+
+    /** Reads and increments the drop counter (never logs post content). */
+    public static int recordDrop() {
+        return DROPPED.incrementAndGet();
+    }
+
+    /** Current drop count, for a settings/diagnostics surface. */
+    public static int droppedCount() {
+        return DROPPED.get();
+    }
 
     /** Maximum entry nesting we track; deeper frames are ignored, never trusted. */
     private static final int MAX_DEPTH = 32;
