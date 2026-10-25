@@ -1,0 +1,98 @@
+/*
+ * SafeX - remove posts that X itself classifies as sensitive, before render.
+ *
+ * Detection is X's own classification, not a local heuristic:
+ *   JsonMediaEntity.q            == "possibly_sensitive"
+ *   JsonMediaEntity.u            == "sensitive_media_warning" / "ext_sensitive_media_warning"
+ *   JsonSensitiveMediaWarning.a  == "adult_content"
+ *   JsonSensitiveMediaWarning.b  == "graphic_violence"
+ *   JsonSensitiveMediaWarning.c  == "other"
+ *
+ * The timeline entry parser is wrapped by beginEntry()/endEntry(), and every
+ * media entity parsed on that thread marks the current entry. checkEntry()
+ * then returns null, which is the drop path piko already uses for ads: the
+ * JSON mapper returns null and the entry never reaches the model or the UI.
+ */
+
+package app.morphe.extension.twitter.patches;
+
+import com.twitter.model.json.core.JsonMediaEntity;
+import com.twitter.model.json.core.JsonSensitiveMediaWarning;
+
+public final class SafeX {
+
+    /** Maximum entry nesting we track; deeper frames are ignored, never trusted. */
+    private static final int MAX_DEPTH = 32;
+
+    private static final ThreadLocal<int[]> DEPTH = new ThreadLocal<int[]>() {
+        @Override
+        protected int[] initialValue() {
+            return new int[1];
+        }
+    };
+
+    private static final ThreadLocal<boolean[]> FRAMES = new ThreadLocal<boolean[]>() {
+        @Override
+        protected boolean[] initialValue() {
+            return new boolean[MAX_DEPTH];
+        }
+    };
+
+    private SafeX() {
+    }
+
+    /** Called at the very start of a timeline entry / module item parse. */
+    public static void beginEntry() {
+        int[] depth = DEPTH.get();
+        int d = depth[0];
+        if (d < MAX_DEPTH) {
+            FRAMES.get()[d] = false;
+            depth[0] = d + 1;
+        }
+    }
+
+    /**
+     * Called when an entry parse finishes. Returns true when anything parsed
+     * inside that entry was classified sensitive, and pops the frame.
+     */
+    public static boolean endEntry() {
+        int[] depth = DEPTH.get();
+        int d = depth[0];
+        if (d == 0) {
+            return false;
+        }
+        depth[0] = d - 1;
+        return FRAMES.get()[d - 1];
+    }
+
+    /**
+     * Called after each media entity is parsed. Marks the innermost entry
+     * frame when X flagged the media, using the three classification flags.
+     */
+    public static void observeMedia(Object media) {
+        if (!(media instanceof JsonMediaEntity)) {
+            return;
+        }
+        int[] depth = DEPTH.get();
+        int d = depth[0];
+        if (d == 0) {
+            // Media parsed outside an entry (e.g. a detail request); ignore so
+            // the marker cannot leak into the next timeline entry.
+            return;
+        }
+        JsonMediaEntity entity = (JsonMediaEntity) media;
+        boolean sensitive = entity.q;
+        if (!sensitive) {
+            JsonSensitiveMediaWarning warning = entity.u;
+            sensitive = warning != null && (warning.a || warning.b || warning.c);
+        }
+        if (sensitive) {
+            FRAMES.get()[d - 1] = true;
+        }
+    }
+
+    /** Diagnostics helper for logging; carries no post content. */
+    public static String describe() {
+        return "SafeX depth=" + DEPTH.get()[0];
+    }
+}

@@ -90,6 +90,8 @@ public class TimelineEntry {
         return false;
     }
     public static JsonTimelineEntry checkEntry(JsonTimelineEntry jsonTimelineEntry) {
+        // SafeX: close the frame opened at parse start before any early return.
+        boolean safeXSensitive = SafeX.endEntry();
         try {
             String entryId = jsonTimelineEntry.a;
             if (isEntryIdRemove(entryId)) {
@@ -97,15 +99,22 @@ public class TimelineEntry {
             }
         } catch (Exception ignored) {
         }
+        if (safeXSensitive) {
+            return null;
+        }
         return jsonTimelineEntry;
     }
     public static JsonTimelineModuleItem checkEntry(JsonTimelineModuleItem jsonTimelineModuleItem) {
+        boolean safeXSensitive = SafeX.endEntry();
         try {
             String entryId = jsonTimelineModuleItem.a;
             if (isEntryIdRemove(entryId)) {
                 return null;
             }
         } catch (Exception ignored) {
+        }
+        if (safeXSensitive) {
+            return null;
         }
         return jsonTimelineModuleItem;
     }
