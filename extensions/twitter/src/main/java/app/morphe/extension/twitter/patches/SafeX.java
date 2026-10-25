@@ -193,15 +193,15 @@ public final class SafeX {
             "exposed", "exposing", "revengeporn", "sextortion", "nudeshare",
             "trading", "trades", "nudetrade", "cp", "childporn",
             // --- Arabic (script) ---
-            "سكس", "سكسي", "جنس", "جنسي", "نيك", "طيز", "كس", "زب", "عاهر",
-            "عاهرة", "شرموط", "شرموطة", "عاري", "عريان", "بورن", "لواط",
-            "سحاق", "شهوة", "إغراء", "مثارة", "اباحي", "إباحي", "اباحية",
-            "إباحية", "خلاعة", "خلاعي", "دعارة", "قحبة", "قحب", "فاحشة",
-            "منحرف", "منحرفة", "مومس", "بغي", "زانية", "زاني", "خليع",
-            "مثير", "مثيرة", "جسد", "ملابس_داخلية", "لانجيري",
-            "سكس_عربي", "سكس_مصري", "سكس_خليجي", "سكس_سوري", "سكس_عراقي",
-            "سكس_مغربي", "سكس_جزائري", "سكس_تونسي", "سكس_لبناني",
-            "نيك_عربي", "نيك_مصري", "نيك_خليجي", "شرموطة_عربية",
+            "Ø³ÙƒØ³", "Ø³ÙƒØ³ÙŠ", "Ø¬Ù†Ø³", "Ø¬Ù†Ø³ÙŠ", "Ù†ÙŠÙƒ", "Ø·ÙŠØ²", "ÙƒØ³", "Ø²Ø¨", "Ø¹Ø§Ù‡Ø±",
+            "Ø¹Ø§Ù‡Ø±Ø©", "Ø´Ø±Ù…ÙˆØ·", "Ø´Ø±Ù…ÙˆØ·Ø©", "Ø¹Ø§Ø±ÙŠ", "Ø¹Ø±ÙŠØ§Ù†", "Ø¨ÙˆØ±Ù†", "Ù„ÙˆØ§Ø·",
+            "Ø³Ø­Ø§Ù‚", "Ø´Ù‡ÙˆØ©", "Ø¥ØºØ±Ø§Ø¡", "Ù…Ø«Ø§Ø±Ø©", "Ø§Ø¨Ø§Ø­ÙŠ", "Ø¥Ø¨Ø§Ø­ÙŠ", "Ø§Ø¨Ø§Ø­ÙŠØ©",
+            "Ø¥Ø¨Ø§Ø­ÙŠØ©", "Ø®Ù„Ø§Ø¹Ø©", "Ø®Ù„Ø§Ø¹ÙŠ", "Ø¯Ø¹Ø§Ø±Ø©", "Ù‚Ø­Ø¨Ø©", "Ù‚Ø­Ø¨", "ÙØ§Ø­Ø´Ø©",
+            "Ù…Ù†Ø­Ø±Ù", "Ù…Ù†Ø­Ø±ÙØ©", "Ù…ÙˆÙ…Ø³", "Ø¨ØºÙŠ", "Ø²Ø§Ù†ÙŠØ©", "Ø²Ø§Ù†ÙŠ", "Ø®Ù„ÙŠØ¹",
+            "Ù…Ø«ÙŠØ±", "Ù…Ø«ÙŠØ±Ø©", "Ø¬Ø³Ø¯", "Ù…Ù„Ø§Ø¨Ø³_Ø¯Ø§Ø®Ù„ÙŠØ©", "Ù„Ø§Ù†Ø¬ÙŠØ±ÙŠ",
+            "Ø³ÙƒØ³_Ø¹Ø±Ø¨ÙŠ", "Ø³ÙƒØ³_Ù…ØµØ±ÙŠ", "Ø³ÙƒØ³_Ø®Ù„ÙŠØ¬ÙŠ", "Ø³ÙƒØ³_Ø³ÙˆØ±ÙŠ", "Ø³ÙƒØ³_Ø¹Ø±Ø§Ù‚ÙŠ",
+            "Ø³ÙƒØ³_Ù…ØºØ±Ø¨ÙŠ", "Ø³ÙƒØ³_Ø¬Ø²Ø§Ø¦Ø±ÙŠ", "Ø³ÙƒØ³_ØªÙˆÙ†Ø³ÙŠ", "Ø³ÙƒØ³_Ù„Ø¨Ù†Ø§Ù†ÙŠ",
+            "Ù†ÙŠÙƒ_Ø¹Ø±Ø¨ÙŠ", "Ù†ÙŠÙƒ_Ù…ØµØ±ÙŠ", "Ù†ÙŠÙƒ_Ø®Ù„ÙŠØ¬ÙŠ", "Ø´Ø±Ù…ÙˆØ·Ø©_Ø¹Ø±Ø¨ÙŠØ©",
             // --- Arabic (transliteration / latin) ---
             "siks", "siksmisr", "siks3arabi", "sks", "sksy", "neek", "neik",
             "nik", "nikk", "taiz", "teez", "tiz", "kos", "koss", "zob", "zobb",
@@ -217,23 +217,23 @@ public final class SafeX {
             "arab onlyfans", "arab telegram", "arab snapchat", "arab mega",
             "arab telebox", "arab leaks telegram", "arab nsfw",
             // --- Japanese ---
-            "エロ", "えろ", "エロ垢", "エロい", "おっぱい", "ぱいぱい", "おぱい",
-            "セックス", "セクロス", "ヌード", "裸", "裸体", "全裸", "半裸",
-            "エッチ", "えっち", "痴女", "痴漢", "変態", "フェラ", "手コキ",
-            "中出し", "顔射", "潮吹き", "盗撮", "無修正", "アダルト", "成人",
-            "18禁", "裏垢", "オナニー", "マンコ", "ちんこ", "おまんこ", "まんこ",
-            "巨乳", "爆乳", "美乳", "お尻", "尻", "パンツ", "下着", "ランジェリー",
-            "風俗", "デリヘル", "ソープ", "AV女優", "AV男優", "エロ動画",
-            "エロ画像", "エロサイト", "セフレ", "援助交際", "パパ活",
+            "ã‚¨ãƒ­", "ãˆã‚", "ã‚¨ãƒ­åž¢", "ã‚¨ãƒ­ã„", "ãŠã£ã±ã„", "ã±ã„ã±ã„", "ãŠã±ã„",
+            "ã‚»ãƒƒã‚¯ã‚¹", "ã‚»ã‚¯ãƒ­ã‚¹", "ãƒŒãƒ¼ãƒ‰", "è£¸", "è£¸ä½“", "å…¨è£¸", "åŠè£¸",
+            "ã‚¨ãƒƒãƒ", "ãˆã£ã¡", "ç—´å¥³", "ç—´æ¼¢", "å¤‰æ…‹", "ãƒ•ã‚§ãƒ©", "æ‰‹ã‚³ã‚­",
+            "ä¸­å‡ºã—", "é¡”å°„", "æ½®å¹ã", "ç›—æ’®", "ç„¡ä¿®æ­£", "ã‚¢ãƒ€ãƒ«ãƒˆ", "æˆäºº",
+            "18ç¦", "è£åž¢", "ã‚ªãƒŠãƒ‹ãƒ¼", "ãƒžãƒ³ã‚³", "ã¡ã‚“ã“", "ãŠã¾ã‚“ã“", "ã¾ã‚“ã“",
+            "å·¨ä¹³", "çˆ†ä¹³", "ç¾Žä¹³", "ãŠå°»", "å°»", "ãƒ‘ãƒ³ãƒ„", "ä¸‹ç€", "ãƒ©ãƒ³ã‚¸ã‚§ãƒªãƒ¼",
+            "é¢¨ä¿—", "ãƒ‡ãƒªãƒ˜ãƒ«", "ã‚½ãƒ¼ãƒ—", "AVå¥³å„ª", "AVç”·å„ª", "ã‚¨ãƒ­å‹•ç”»",
+            "ã‚¨ãƒ­ç”»åƒ", "ã‚¨ãƒ­ã‚µã‚¤ãƒˆ", "ã‚»ãƒ•ãƒ¬", "æ´åŠ©äº¤éš›", "ãƒ‘ãƒ‘æ´»",
             // --- Russian ---
-            "секс", "секси", "порно", "порнуха", "голая", "голые", "голый",
-            "эротика", "эротик", "интим", "минет", "анал", "сиськи", "сиська",
-            "попка", "писька", "член", "вагина", "оргазм", "мастурбация",
-            "разврат", "шлюха", "блядь", "сука", "трахать", "трах", "ебать",
-            "ебля", "голые_девушки", "голые_парни", "секс_чат", "секс_знакомства",
+            "ÑÐµÐºÑ", "ÑÐµÐºÑÐ¸", "Ð¿Ð¾Ñ€Ð½Ð¾", "Ð¿Ð¾Ñ€Ð½ÑƒÑ…Ð°", "Ð³Ð¾Ð»Ð°Ñ", "Ð³Ð¾Ð»Ñ‹Ðµ", "Ð³Ð¾Ð»Ñ‹Ð¹",
+            "ÑÑ€Ð¾Ñ‚Ð¸ÐºÐ°", "ÑÑ€Ð¾Ñ‚Ð¸Ðº", "Ð¸Ð½Ñ‚Ð¸Ð¼", "Ð¼Ð¸Ð½ÐµÑ‚", "Ð°Ð½Ð°Ð»", "ÑÐ¸ÑÑŒÐºÐ¸", "ÑÐ¸ÑÑŒÐºÐ°",
+            "Ð¿Ð¾Ð¿ÐºÐ°", "Ð¿Ð¸ÑÑŒÐºÐ°", "Ñ‡Ð»ÐµÐ½", "Ð²Ð°Ð³Ð¸Ð½Ð°", "Ð¾Ñ€Ð³Ð°Ð·Ð¼", "Ð¼Ð°ÑÑ‚ÑƒÑ€Ð±Ð°Ñ†Ð¸Ñ",
+            "Ñ€Ð°Ð·Ð²Ñ€Ð°Ñ‚", "ÑˆÐ»ÑŽÑ…Ð°", "Ð±Ð»ÑÐ´ÑŒ", "ÑÑƒÐºÐ°", "Ñ‚Ñ€Ð°Ñ…Ð°Ñ‚ÑŒ", "Ñ‚Ñ€Ð°Ñ…", "ÐµÐ±Ð°Ñ‚ÑŒ",
+            "ÐµÐ±Ð»Ñ", "Ð³Ð¾Ð»Ñ‹Ðµ_Ð´ÐµÐ²ÑƒÑˆÐºÐ¸", "Ð³Ð¾Ð»Ñ‹Ðµ_Ð¿Ð°Ñ€Ð½Ð¸", "ÑÐµÐºÑ_Ñ‡Ð°Ñ‚", "ÑÐµÐºÑ_Ð·Ð½Ð°ÐºÐ¾Ð¼ÑÑ‚Ð²Ð°",
             // --- Spanish ---
             "sexo", "sexos", "tetas", "tetonas", "culo", "culos", "culona",
-            "coño", "cono", "verga", "pene", "vagina", "desnuda", "desnudo",
+            "coÃ±o", "cono", "verga", "pene", "vagina", "desnuda", "desnudo",
             "desnudas", "caliente", "cachonda", "orgia", "mamada", "mamadas",
             "puta", "putita", "putas", "zorra", "zorras", "nalgona", "nalgonas",
             "lenceria", "erotico", "erotica", "porno", "pornos", "pajilla",
@@ -250,7 +250,7 @@ public final class SafeX {
             "nackt", "nackte", "nackten", "titten", "schwanz", "fotze", "arsch",
             "geil", "geile", "geiler", "pornos", "porno", "erotik", "fick",
             "ficken", "gefickt", "blasen", "blowjob", "muschi", "busen",
-            "brüste", "bruste", "sexchat", "sexdate", "sexkontakt",
+            "brÃ¼ste", "bruste", "sexchat", "sexdate", "sexkontakt",
             // --- French ---
             "sexe", "nue", "nues", "nu", "nichons", "chatte", "bite", "couille",
             "couilles", "salope", "salopes", "pute", "putes", "chienne",
@@ -258,22 +258,22 @@ public final class SafeX {
             "branlette", "branler", "jouir", "jouissance", "suce", "sucer",
             "sexanal", "sexoral", "plancul", "plan_cul", "nudes", "pack",
             // --- Korean ---
-            "야동", "야동사이트", "섹스", "섹스영상", "야사", "노출", "노출증",
-            "자위", "자위행위", "성인", "19금", "알몸", "오르가즘", "젖",
-            "가슴", "엉덩이", "팬티", "속옷", "란제리", "조건만남", "원나잇",
-            "성인영상", "성인사진", "야한", "야한사진",
+            "ì•¼ë™", "ì•¼ë™ì‚¬ì´íŠ¸", "ì„¹ìŠ¤", "ì„¹ìŠ¤ì˜ìƒ", "ì•¼ì‚¬", "ë…¸ì¶œ", "ë…¸ì¶œì¦",
+            "ìžìœ„", "ìžìœ„í–‰ìœ„", "ì„±ì¸", "19ê¸ˆ", "ì•Œëª¸", "ì˜¤ë¥´ê°€ì¦˜", "ì –",
+            "ê°€ìŠ´", "ì—‰ë©ì´", "íŒ¬í‹°", "ì†ì˜·", "ëž€ì œë¦¬", "ì¡°ê±´ë§Œë‚¨", "ì›ë‚˜ìž‡",
+            "ì„±ì¸ì˜ìƒ", "ì„±ì¸ì‚¬ì§„", "ì•¼í•œ", "ì•¼í•œì‚¬ì§„",
             // --- Chinese ---
-            "色情", "色情片", "裸", "裸照", "裸体", "全裸", "半裸", "情色",
-            "成人", "成人片", "成人视频", "18禁", "做爱", "性爱", "性交", "性行为",
-            "淫", "淫秽", "黄色", "黄片", "三级", "三级片", "自慰", "约炮",
-            "一夜情", "露点", "走光", "偷拍", "无码", "有码", "内射", "口交",
+            "è‰²æƒ…", "è‰²æƒ…ç‰‡", "è£¸", "è£¸ç…§", "è£¸ä½“", "å…¨è£¸", "åŠè£¸", "æƒ…è‰²",
+            "æˆäºº", "æˆäººç‰‡", "æˆäººè§†é¢‘", "18ç¦", "åšçˆ±", "æ€§çˆ±", "æ€§äº¤", "æ€§è¡Œä¸º",
+            "æ·«", "æ·«ç§½", "é»„è‰²", "é»„ç‰‡", "ä¸‰çº§", "ä¸‰çº§ç‰‡", "è‡ªæ…°", "çº¦ç‚®",
+            "ä¸€å¤œæƒ…", "éœ²ç‚¹", "èµ°å…‰", "å·æ‹", "æ— ç ", "æœ‰ç ", "å†…å°„", "å£äº¤",
             // --- Hindi ---
-            "सेक्स", "अश्लील", "नग्न", "पोर्न", "कामुक", "वासना", "अश्लीलता",
+            "à¤¸à¥‡à¤•à¥à¤¸", "à¤…à¤¶à¥à¤²à¥€à¤²", "à¤¨à¤—à¥à¤¨", "à¤ªà¥‹à¤°à¥à¤¨", "à¤•à¤¾à¤®à¥à¤•", "à¤µà¤¾à¤¸à¤¨à¤¾", "à¤…à¤¶à¥à¤²à¥€à¤²à¤¤à¤¾",
             // --- Turkish ---
-            "seks", "seksi", "sikiş", "sikis", "çıplak", "ciplak", "çıplaklar",
-            "sik", "sikerim", "orospu", "oruspu", "kaltak", "fahişe", "fahise",
-            "meme", "memeler", "göğüs", "gogus", "amcık", "amcik", "penis",
-            "vajina", "porno", "pornosu", "erotik", "azgın", "azgin",
+            "seks", "seksi", "sikiÅŸ", "sikis", "Ã§Ä±plak", "ciplak", "Ã§Ä±plaklar",
+            "sik", "sikerim", "orospu", "oruspu", "kaltak", "fahiÅŸe", "fahise",
+            "meme", "memeler", "gÃ¶ÄŸÃ¼s", "gogus", "amcÄ±k", "amcik", "penis",
+            "vajina", "porno", "pornosu", "erotik", "azgÄ±n", "azgin",
             // --- Italian ---
             "sesso", "sessi", "nuda", "nude", "nudo", "tette", "cazzo", "figa",
             "scopare", "scopata", "pompino", "sega", "seghe", "orgasmo",
@@ -286,12 +286,12 @@ public final class SafeX {
             "seks", "naakt", "naakte", "tieten", "lul", "kut", "neuken",
             "geneukt", "porno", "erotiek", "geil", "slet", "hoer", "poep",
             // --- Thai ---
-            "เสียว", "หลุด", "โป๊", "เปลือย", "เซ็กส์", "เซ็ก", "นม", "หี",
-            "ควย", "เย็ด", "เสียวๆ", "คลิปหลุด", "ภาพหลุด", "โป๊เปลือย",
+            "à¹€à¸ªà¸µà¸¢à¸§", "à¸«à¸¥à¸¸à¸”", "à¹‚à¸›à¹Š", "à¹€à¸›à¸¥à¸·à¸­à¸¢", "à¹€à¸‹à¹‡à¸à¸ªà¹Œ", "à¹€à¸‹à¹‡à¸", "à¸™à¸¡", "à¸«à¸µ",
+            "à¸„à¸§à¸¢", "à¹€à¸¢à¹‡à¸”", "à¹€à¸ªà¸µà¸¢à¸§à¹†", "à¸„à¸¥à¸´à¸›à¸«à¸¥à¸¸à¸”", "à¸ à¸²à¸žà¸«à¸¥à¸¸à¸”", "à¹‚à¸›à¹Šà¹€à¸›à¸¥à¸·à¸­à¸¢",
             // --- Vietnamese ---
-            "khỏa thân", "khoa than", "lộ hàng", "lo hang", "nude", "sex",
-            "khiêu dâm", "khieu dam", "địt", "dit", "buồi", "buoi", "lồn", "lon",
-            "clip nóng", "clip nong", "ảnh nóng", "anh nong",
+            "khá»a thÃ¢n", "khoa than", "lá»™ hÃ ng", "lo hang", "nude", "sex",
+            "khiÃªu dÃ¢m", "khieu dam", "Ä‘á»‹t", "dit", "buá»“i", "buoi", "lá»“n", "lon",
+            "clip nÃ³ng", "clip nong", "áº£nh nÃ³ng", "anh nong",
             // --- Indonesian ---
             "bokep", "bokep indo", "telanjang", "mesum", "syur", "ngentot",
             "memek", "kontol", "masturbasi", "colmek", "pewek", "sange",
@@ -360,10 +360,26 @@ public final class SafeX {
         return false;
     }
 
+    /** Query-safe form of a term: letters, digits and spaces only. */
+    private static String sanitize(String term) {
+        StringBuilder out = new StringBuilder(term.length());
+        for (int i = 0; i < term.length(); i++) {
+            char c = term.charAt(i);
+            if (Character.isLetterOrDigit(c) || c == ' ') {
+                out.append(c);
+            }
+        }
+        return out.toString().trim();
+    }
+
     /** Spelling variants, so exact-term server exclusions still bite. */
     private static void addVariants(java.util.LinkedHashSet<String> out, String term) {
-        String lower = term.toLowerCase(java.util.Locale.ROOT);
-        out.add(term);
+        String clean = sanitize(term);
+        if (clean.length() < 3) {
+            return;
+        }
+        String lower = clean.toLowerCase(java.util.Locale.ROOT);
+        out.add(lower);
         if (lower.length() >= 4) {
             out.add(lower + lower.charAt(lower.length() - 1));
             out.add(lower + "s");
@@ -407,45 +423,70 @@ public final class SafeX {
         java.util.Locale locale = java.util.Locale.ROOT;
         String lower = value.toLowerCase(locale);
         StringBuilder out = new StringBuilder(value);
-        java.util.LinkedHashSet<String> terms = new java.util.LinkedHashSet<>();
+        java.util.LinkedHashSet<String> bases = new java.util.LinkedHashSet<>();
+        java.util.LinkedHashSet<String> phraseWords = new java.util.LinkedHashSet<>();
         for (String term : EXCLUDE_TERMS) {
-            if (term.indexOf(' ') >= 0) {
-                terms.add(term);
+            String clean = sanitize(term);
+            if (clean.length() < 3) {
+                continue;
+            }
+            String lc = clean.toLowerCase(locale);
+            if (lc.indexOf(' ') >= 0) {
+                for (String part : lc.split(" +")) {
+                    if (part.length() >= 3) {
+                        phraseWords.add(part);
+                    }
+                }
             } else {
-                addVariants(terms, term);
+                bases.add(lc);
             }
         }
 
         int added = 0;
-        for (String term : terms) {
-            if (added >= 120 || out.length() > 1800) {
+
+        // Pass 1: distinct stems, so the cap covers many terms instead of a few
+        // stems with all their spelling variants.
+        for (String base : bases) {
+            if (added >= 40 || out.length() > 1100) {
                 break;
             }
-            String lowerTerm = term.toLowerCase(locale);
-
-            // Phrases: exclude every word separately, since "-a b" would only
-            // exclude "a" and require "b".
-            if (lowerTerm.indexOf(' ') >= 0) {
-                for (String part : lowerTerm.split(" +")) {
-                    if (part.isEmpty() || lower.contains(part) || lower.contains(" -" + part)) {
-                        continue;
-                    }
-                    out.append(" -").append(part);
-                    added++;
-                    if (added >= 120 || out.length() > 1800) {
-                        break;
-                    }
-                }
+            if (lower.contains(base) || lower.contains(" -" + base)) {
                 continue;
             }
-
-            // Never exclude a term the user searched for: "X -X" makes X reject
-            // the whole request.
-            if (lower.contains(lowerTerm) || lower.contains(" -" + lowerTerm)) {
-                continue;
-            }
-            out.append(" -").append(term);
+            out.append(" -").append(base);
             added++;
+        }
+        for (String word : phraseWords) {
+            if (added >= 40 || out.length() > 1100) {
+                break;
+            }
+            if (lower.contains(word) || lower.contains(" -" + word)) {
+                continue;
+            }
+            out.append(" -").append(word);
+            added++;
+        }
+
+        // Pass 2: spelling variants of those stems, if budget remains.
+        for (String base : bases) {
+            if (added >= 40 || out.length() > 1100) {
+                break;
+            }
+            java.util.LinkedHashSet<String> variants = new java.util.LinkedHashSet<>();
+            addVariants(variants, base);
+            for (String variant : variants) {
+                if (added >= 40 || out.length() > 1100) {
+                    break;
+                }
+                if (variant.equals(base)) {
+                    continue;
+                }
+                if (lower.contains(variant) || lower.contains(" -" + variant)) {
+                    continue;
+                }
+                out.append(" -").append(variant);
+                added++;
+            }
         }
 
         if (added > 0) {
