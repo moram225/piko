@@ -228,3 +228,23 @@ DEX markers: `beginEntry`/`observeMedia` in `classes18.dex` + `classes20.dex`,
 
 Runtime behaviour on a device remains **unverified** — no device or emulator is
 available in this environment.
+
+## Round 12 — artifact identity and installability
+
+Checked with the SDK in the workspace image:
+
+```
+package: name='com.twitter.android' versionName='12.19.1-release.0'
+         versionCode='2147483647' sdkVersion='28'
+Signer #1: CN=Morphe, SHA-256 526f944e3070cbc9ba4d5b1fca498c8295c2f19eb868d4fadc110e5d814ea8a9
+zipalign: OK
+```
+
+Note: the merged APK reports `versionCode=2147483647` (patcher merge behaviour),
+while `versionName` is the correct `12.19.1-release.0`. This does not affect the
+patch (fingerprints match code, not version) but means Play Store will never
+consider it outdated.
+
+Signature authority is `CN=Morphe` from `out/keystore/morphe.keystore`; the
+device's current piko build is signed with a different key, so installing SafeX
+requires uninstall + reinstall and a fresh login.
