@@ -23,6 +23,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public final class SafeX {
 
+    /**
+     * True once a timeline entry parse has started. When SafeX is active it must
+     * see X's original classification flags, so the "Show sensitive media"
+     * patch must not clear them (see TimelineEntry.showSensitiveMedia).
+     */
+    public static volatile boolean active;
+
     /** Number of entries dropped since process start; diagnostics only. */
     private static final AtomicInteger DROPPED = new AtomicInteger();
 
@@ -58,6 +65,7 @@ public final class SafeX {
 
     /** Called at the very start of a timeline entry / module item parse. */
     public static void beginEntry() {
+        active = true;
         int[] depth = DEPTH.get();
         int d = depth[0];
         if (d < MAX_DEPTH) {

@@ -140,7 +140,9 @@ public class TimelineEntry {
         return (JsonBlurredImageInterstitial) patchInterface;
     }
     public static JsonSensitiveMediaWarning showSensitiveMedia(JsonSensitiveMediaWarningPatchInterface patchInterface) {
-        if (showSensitiveMedia && patchInterface != null) {
+        // SafeX needs X's untouched classification flags; never clear them while
+        // SafeX is processing timeline entries, or detection loses the warning.
+        if (showSensitiveMedia && !SafeX.active && patchInterface != null) {
             patchInterface.patch_showSensitiveMedia();
         }
         return (JsonSensitiveMediaWarning) patchInterface;
