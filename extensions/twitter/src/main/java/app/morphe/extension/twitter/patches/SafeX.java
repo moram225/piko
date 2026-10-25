@@ -162,20 +162,147 @@ public final class SafeX {
      * request entirely (verified on device).
      */
     private static final String[] EXCLUDE_TERMS = {
-            "nsfw", "nsfwtwt", "porn", "pornhub", "hentai", "rule34", "onlyfans", "xxx",
-            "pussy", "dick", "cock", "tits", "boobs", "anal", "cum", "nude", "naked",
-            "sexting", "milf", "bdsm", "fetish", "teen", "teenager", "loli", "shota",
-            "escort", "blowjob", "handjob", "creampie", "orgy", "gangbang", "threesome",
-            "minichat", "anxiouspandaa",
-            // Arabic
-            "سكس", "نيك", "طيز", "شرموط", "عاري", "بورن",
-            // Japanese
-            "エロ", "おっぱい", "セックス", "中出し", "ヌード", "変態",
-            // Russian / Spanish / Portuguese / German / French
-            "секс", "порно", "голая", "sexo", "tetas", "putaria", "novinha",
-            "nackt", "titten", "sexe", "salope",
-            // Korean / Chinese / Turkish / Italian / Indonesian
-            "야동", "섹스", "色情", "裸照", "seks", "sesso", "bokep", "telanjang"
+            // --- English core ---
+            "nsfw", "nsfwtwt", "nsfwtw", "nsfwpost", "nsfwcontent", "nsfwedit",
+            "porn", "porno", "pornhub", "pornstar", "pornvideo", "pornography",
+            "xxx", "xxxvideo", "xvideo", "xvideos", "xhamster", "xnxx",
+            "hentai", "hentaii", "rule34", "r34", "e621",
+            "onlyfans", "onlyfan", "onlyfansleak", "fansly", "fanhouse",
+            "chaturbate", "camgirl", "camwhore", "camsoda", "stripchat",
+            "pussy", "pussycat", "dick", "cock", "tits", "titty", "boobs", "boob",
+            "ass", "anal", "analsex", "cum", "cumshot", "cumslut",
+            "horny", "nude", "nudes", "naked", "sex", "sexy", "sexvideo",
+            "sexting", "sextape", "milf", "dilf", "gilf", "bdsm", "fetish",
+            "fetische", "teen", "teens", "teenager", "teenporn", "loli", "shota",
+            "escort", "escorts", "blowjob", "handjob", "deepthroat", "creampie",
+            "orgy", "gangbang", "threesome", "squirt", "orgasm", "masturbation",
+            "masturbate", "dildo", "vibrator", "bondage", "asshole", "anus",
+            "hardcore", "softcore", "amateur", "webcam", "sexcam", "sexchat",
+            "sextoy", "sextoys", "fuck", "fucking", "fucked", "doggystyle",
+            "cowgirl", "titfuck", "roughsex", "dirty", "naughty", "kinky",
+            "kink", "fetish", "horny", "squirting", "cumming", "orgasms",
+            // --- leaks / platforms ---
+            "leak", "leaks", "leaked", "leakednudes", "nudeleaks", "leaknudes",
+            "snapchatleaks", "snapleaks", "snapexposed", "snapchatnudes",
+            "telegramleaks", "telegramnudes", "telegramporn", "telegroups",
+            "discordleaks", "discordnudes", "telebox", "teleboxxx",
+            "arabtelebox", "arabmega", "megaleaks", "megalinks", "mega",
+            "dropboxleaks", "driveleaks", "mega.nz", "linktree",
+            "candid", "candids", "creepshots", "upskirt", "downblouse",
+            "voyeur", "voyeurism", "hiddencam", "spycam", "peeping",
+            "exposed", "exposing", "revengeporn", "sextortion", "nudeshare",
+            "trading", "trades", "nudetrade", "cp", "childporn",
+            // --- Arabic (script) ---
+            "سكس", "سكسي", "جنس", "جنسي", "نيك", "طيز", "كس", "زب", "عاهر",
+            "عاهرة", "شرموط", "شرموطة", "عاري", "عريان", "بورن", "لواط",
+            "سحاق", "شهوة", "إغراء", "مثارة", "اباحي", "إباحي", "اباحية",
+            "إباحية", "خلاعة", "خلاعي", "دعارة", "قحبة", "قحب", "فاحشة",
+            "منحرف", "منحرفة", "مومس", "بغي", "زانية", "زاني", "خليع",
+            "مثير", "مثيرة", "جسد", "ملابس_داخلية", "لانجيري",
+            "سكس_عربي", "سكس_مصري", "سكس_خليجي", "سكس_سوري", "سكس_عراقي",
+            "سكس_مغربي", "سكس_جزائري", "سكس_تونسي", "سكس_لبناني",
+            "نيك_عربي", "نيك_مصري", "نيك_خليجي", "شرموطة_عربية",
+            // --- Arabic (transliteration / latin) ---
+            "siks", "siksmisr", "siks3arabi", "sks", "sksy", "neek", "neik",
+            "nik", "nikk", "taiz", "teez", "tiz", "kos", "koss", "zob", "zobb",
+            "sharmota", "sharmouta", "sharmoota", "sharmuta", "3ahira", "ahira",
+            "3areya", "3arian", "3arey", "boor", "boori", "lwat", "sehaq",
+            "shahwa", "ibahi", "ebahi", "ebahia", "da3ara", "da3ara", "qahba",
+            "qahbeh", "momos", "boghy", "zanya", "zani", "khale3", "mouser",
+            "muser", "mthir", "mthira", "jasad", "langerie", "langery",
+            "siks arabi", "siks masri", "siks khaleeji", "siks suri",
+            "siks iraqi", "siks maghribi", "siks jazairi", "siks tunsi",
+            "siks lubnani", "neek arabi", "neek masri", "neek khaleeji",
+            "arab sex", "arab porn", "arab nudes", "arab leaks", "arab xxx",
+            "arab onlyfans", "arab telegram", "arab snapchat", "arab mega",
+            "arab telebox", "arab leaks telegram", "arab nsfw",
+            // --- Japanese ---
+            "エロ", "えろ", "エロ垢", "エロい", "おっぱい", "ぱいぱい", "おぱい",
+            "セックス", "セクロス", "ヌード", "裸", "裸体", "全裸", "半裸",
+            "エッチ", "えっち", "痴女", "痴漢", "変態", "フェラ", "手コキ",
+            "中出し", "顔射", "潮吹き", "盗撮", "無修正", "アダルト", "成人",
+            "18禁", "裏垢", "オナニー", "マンコ", "ちんこ", "おまんこ", "まんこ",
+            "巨乳", "爆乳", "美乳", "お尻", "尻", "パンツ", "下着", "ランジェリー",
+            "風俗", "デリヘル", "ソープ", "AV女優", "AV男優", "エロ動画",
+            "エロ画像", "エロサイト", "セフレ", "援助交際", "パパ活",
+            // --- Russian ---
+            "секс", "секси", "порно", "порнуха", "голая", "голые", "голый",
+            "эротика", "эротик", "интим", "минет", "анал", "сиськи", "сиська",
+            "попка", "писька", "член", "вагина", "оргазм", "мастурбация",
+            "разврат", "шлюха", "блядь", "сука", "трахать", "трах", "ебать",
+            "ебля", "голые_девушки", "голые_парни", "секс_чат", "секс_знакомства",
+            // --- Spanish ---
+            "sexo", "sexos", "tetas", "tetonas", "culo", "culos", "culona",
+            "coño", "cono", "verga", "pene", "vagina", "desnuda", "desnudo",
+            "desnudas", "caliente", "cachonda", "orgia", "mamada", "mamadas",
+            "puta", "putita", "putas", "zorra", "zorras", "nalgona", "nalgonas",
+            "lenceria", "erotico", "erotica", "porno", "pornos", "pajilla",
+            "pajillas", "corrida", "corridas", "follando", "follar", "coger",
+            "cogiendo", "sexo_anal", "sexo_oral", "pack", "packs", "only",
+            // --- Portuguese ---
+            "putaria", "putarias", "novinha", "novinhas", "safada", "safadas",
+            "safadeza", "buceta", "bucetas", "pau", "paus", "cu", "cus",
+            "peitos", "peitao", "nua", "nuas", "nu", "nus", "tesao", "tarada",
+            "taradas", "acompanhante", "acompanhantes", "gp", "gps", "piranha",
+            "piranhas", "vagabunda", "vagabundas", "transar", "transando",
+            "gozar", "gozada", "punheta", "boquete", "anal", "pack", "packs",
+            // --- German ---
+            "nackt", "nackte", "nackten", "titten", "schwanz", "fotze", "arsch",
+            "geil", "geile", "geiler", "pornos", "porno", "erotik", "fick",
+            "ficken", "gefickt", "blasen", "blowjob", "muschi", "busen",
+            "brüste", "bruste", "sexchat", "sexdate", "sexkontakt",
+            // --- French ---
+            "sexe", "nue", "nues", "nu", "nichons", "chatte", "bite", "couille",
+            "couilles", "salope", "salopes", "pute", "putes", "chienne",
+            "baise", "baiser", "baisee", "erotique", "porno", "porn",
+            "branlette", "branler", "jouir", "jouissance", "suce", "sucer",
+            "sexanal", "sexoral", "plancul", "plan_cul", "nudes", "pack",
+            // --- Korean ---
+            "야동", "야동사이트", "섹스", "섹스영상", "야사", "노출", "노출증",
+            "자위", "자위행위", "성인", "19금", "알몸", "오르가즘", "젖",
+            "가슴", "엉덩이", "팬티", "속옷", "란제리", "조건만남", "원나잇",
+            "성인영상", "성인사진", "야한", "야한사진",
+            // --- Chinese ---
+            "色情", "色情片", "裸", "裸照", "裸体", "全裸", "半裸", "情色",
+            "成人", "成人片", "成人视频", "18禁", "做爱", "性爱", "性交", "性行为",
+            "淫", "淫秽", "黄色", "黄片", "三级", "三级片", "自慰", "约炮",
+            "一夜情", "露点", "走光", "偷拍", "无码", "有码", "内射", "口交",
+            // --- Hindi ---
+            "सेक्स", "अश्लील", "नग्न", "पोर्न", "कामुक", "वासना", "अश्लीलता",
+            // --- Turkish ---
+            "seks", "seksi", "sikiş", "sikis", "çıplak", "ciplak", "çıplaklar",
+            "sik", "sikerim", "orospu", "oruspu", "kaltak", "fahişe", "fahise",
+            "meme", "memeler", "göğüs", "gogus", "amcık", "amcik", "penis",
+            "vajina", "porno", "pornosu", "erotik", "azgın", "azgin",
+            // --- Italian ---
+            "sesso", "sessi", "nuda", "nude", "nudo", "tette", "cazzo", "figa",
+            "scopare", "scopata", "pompino", "sega", "seghe", "orgasmo",
+            "porno", "pornazzi", "erotico", "erotica", "troia", "puttana",
+            // --- Polish ---
+            "seks", "seksu", "porno", "porno", "naga", "nago", "nagie", "cycki",
+            "kutasa", "kutas", "cipka", "cipy", "jebac", "jebanie", "pizda",
+            "suka", "kurwa", "sex", "erotyka", "nagie_zdjecia",
+            // --- Dutch ---
+            "seks", "naakt", "naakte", "tieten", "lul", "kut", "neuken",
+            "geneukt", "porno", "erotiek", "geil", "slet", "hoer", "poep",
+            // --- Thai ---
+            "เสียว", "หลุด", "โป๊", "เปลือย", "เซ็กส์", "เซ็ก", "นม", "หี",
+            "ควย", "เย็ด", "เสียวๆ", "คลิปหลุด", "ภาพหลุด", "โป๊เปลือย",
+            // --- Vietnamese ---
+            "khỏa thân", "khoa than", "lộ hàng", "lo hang", "nude", "sex",
+            "khiêu dâm", "khieu dam", "địt", "dit", "buồi", "buoi", "lồn", "lon",
+            "clip nóng", "clip nong", "ảnh nóng", "anh nong",
+            // --- Indonesian ---
+            "bokep", "bokep indo", "telanjang", "mesum", "syur", "ngentot",
+            "memek", "kontol", "masturbasi", "colmek", "pewek", "sange",
+            "viral", "viral indo", "open bo", "openbo", "bookingan",
+            // --- misc / generic ---
+            "18+", "21+", "r18", "adult", "adultcontent", "adultvideo",
+            "sexwork", "sexworker", "nsfw18", "nsfwgirl", "nsfwboy",
+            "hotgirl", "hotgirls", "hotwife", "hotmom", "stepmom", "stepsis",
+            "stepbro", "stepdad", "daddy", "mommy", "sugar", "sugarbaby",
+            "sugardaddy", "hookup", "hookups", "fwb", "ons", "oneNight",
+            "sext", "sexts", "snap", "snapsex", "snapfun", "snapchatsex"
     };
 
     private static final AtomicBoolean QUERY_LOGGED = new AtomicBoolean(false);
@@ -216,6 +343,9 @@ public final class SafeX {
             if (word.length() > 1) {
                 String collapsed = collapse(word.toString());
                 for (String term : EXCLUDE_TERMS) {
+                    if (term.indexOf(' ') >= 0) {
+                        continue; // phrases are handled as individual words
+                    }
                     String stem = collapse(term.toLowerCase(java.util.Locale.ROOT));
                     if (collapsed.equals(stem)) {
                         return true;
@@ -279,15 +409,36 @@ public final class SafeX {
         StringBuilder out = new StringBuilder(value);
         java.util.LinkedHashSet<String> terms = new java.util.LinkedHashSet<>();
         for (String term : EXCLUDE_TERMS) {
-            addVariants(terms, term);
+            if (term.indexOf(' ') >= 0) {
+                terms.add(term);
+            } else {
+                addVariants(terms, term);
+            }
         }
 
         int added = 0;
         for (String term : terms) {
-            if (added >= 40 || out.length() > 1100) {
+            if (added >= 120 || out.length() > 1800) {
                 break;
             }
             String lowerTerm = term.toLowerCase(locale);
+
+            // Phrases: exclude every word separately, since "-a b" would only
+            // exclude "a" and require "b".
+            if (lowerTerm.indexOf(' ') >= 0) {
+                for (String part : lowerTerm.split(" +")) {
+                    if (part.isEmpty() || lower.contains(part) || lower.contains(" -" + part)) {
+                        continue;
+                    }
+                    out.append(" -").append(part);
+                    added++;
+                    if (added >= 120 || out.length() > 1800) {
+                        break;
+                    }
+                }
+                continue;
+            }
+
             // Never exclude a term the user searched for: "X -X" makes X reject
             // the whole request.
             if (lower.contains(lowerTerm) || lower.contains(" -" + lowerTerm)) {
