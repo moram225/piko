@@ -25,6 +25,42 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 
 private const val SAFEX_CLASS = "$PATCHES_DESCRIPTOR/SafeX;"
+private const val SAFEX_SETTINGS_CLASS = "$PATCHES_DESCRIPTOR/SafeXSettings;"
+private const val SENSITIVE_SETTINGS_MODEL = "Lcom/twitter/sensitivemedia/model/b;"
+private const val SEARCH_MODEL = "Lcom/twitter/model/search/c;"
+
+/** X's sensitive-media settings repository (impl: request/c, a() = get). */
+private object SensitiveSettingsGetFingerprint : Fingerprint(
+    definingClass = "Lcom/twitter/sensitivemedia/request/c;",
+    name = "a",
+    returnType = "Lio/reactivex/internal/operators/single/x;",
+)
+
+/** b(model) = write the sensitive-media setting. */
+private object SensitiveSettingsSetFingerprint : Fingerprint(
+    definingClass = "Lcom/twitter/sensitivemedia/request/c;",
+    name = "b",
+    returnType = "Lio/reactivex/internal/operators/single/x;",
+)
+
+/** Read path for search settings: h(response) -> model (bridge return included). */
+private object SearchSettingsReadFingerprint : Fingerprint(
+    definingClass = "Lcom/twitter/android/search/implementation/settings/repository/a;",
+    name = "h",
+)
+
+/** Write path for search settings. */
+private object SearchSettingsWriteFingerprint : Fingerprint(
+    definingClass = "Lcom/twitter/android/search/implementation/settings/repository/c;",
+    name = "f",
+    returnType = "Lcom/twitter/async/http/a;",
+)
+
+/** Response parser of the search-settings update (Boolean result). */
+private object SearchSettingsResultFingerprint : Fingerprint(
+    definingClass = "Lcom/twitter/android/search/implementation/settings/repository/c;",
+    name = "h",
+)
 
 private object SafeXEntryParseFingerprint : Fingerprint(
     definingClass = "Lcom/twitter/model/json/timeline/urt/JsonTimelineEntry\$\$JsonObjectMapper;",
@@ -95,6 +131,55 @@ val safeX =
                 visibilityReturn.location.index,
                 """
                 invoke-static {}, $SAFEX_CLASS->observeVisibility()V
+                """.trimIndent(),
+            )
+
+            // 4. Lock X's own "hide sensitive content" setting to Drop x3.
+            SensitiveSettingsGetFingerprint.method.addInstructions(
+                0,
+                "invoke-static { p0 }, $SAFEX_SETTINGS_CLASS->enforce(Ljava/lang/Object;)V",
+            )
+            SensitiveSettingsSetFingerprint.method.addInstructions(
+                0,
+                """
+                invoke-static { p1 }, $SAFEX_SETTINGS_CLASS->forceDrop($SENSITIVE_SETTINGS_MODEL)$SENSITIVE_SETTINGS_MODEL
+                move-result-object p1
+                """.trimIndent(),
+            )
+
+            // 5. Lock Search settings to "Hide sensitive content".
+            SearchSettingsWriteFingerprint.method.addInstructions(
+                0,
+                """
+                invoke-static { p1 }, $SAFEX_SETTINGS_CLASS->forceSearchWrite(Ljava/lang/Object;)Ljava/lang/Object;
+                move-result-object p1
+                check-cast p1, $SEARCH_MODEL
+                """.trimIndent(),
+            )
+            val searchResult = SearchSettingsResultFingerprint.method
+            val searchResultReturn = searchResult.instructions.last { it.opcode == Opcode.RETURN_OBJECT }
+            val searchResultRegister = searchResult
+                .getInstruction<OneRegisterInstruction>(searchResultReturn.location.index)
+                .registerA
+            searchResult.addInstructions(
+                searchResultReturn.location.index,
+                """
+                invoke-static { v$searchResultRegister }, $SAFEX_SETTINGS_CLASS->reportSearchWrite(Ljava/lang/Object;)Ljava/lang/Object;
+                move-result-object v$searchResultRegister
+                check-cast v$searchResultRegister, Ljava/lang/Boolean;
+                """.trimIndent(),
+            )
+            val searchRead = SearchSettingsReadFingerprint.method
+            val searchReadReturn = searchRead.instructions.last { it.opcode == Opcode.RETURN_OBJECT }
+            val searchReadRegister = searchRead
+                .getInstruction<OneRegisterInstruction>(searchReadReturn.location.index)
+                .registerA
+            searchRead.addInstructions(
+                searchReadReturn.location.index,
+                """
+                invoke-static { v$searchReadRegister }, $SAFEX_SETTINGS_CLASS->forceSearchRead(Ljava/lang/Object;)Ljava/lang/Object;
+                move-result-object v$searchReadRegister
+                check-cast v$searchReadRegister, $SEARCH_MODEL
                 """.trimIndent(),
             )
         }

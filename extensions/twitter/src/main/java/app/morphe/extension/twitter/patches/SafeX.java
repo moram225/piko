@@ -19,9 +19,18 @@ package app.morphe.extension.twitter.patches;
 import com.twitter.model.json.core.JsonMediaEntity;
 import com.twitter.model.json.core.JsonSensitiveMediaWarning;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public final class SafeX {
+
+    /** One-shot runtime diagnostics: proves which hooks X actually executes. */
+    private static final AtomicBoolean ENTRY_SEEN = new AtomicBoolean(false);
+    private static final AtomicBoolean MEDIA_SEEN = new AtomicBoolean(false);
+    private static final AtomicBoolean SIGNAL_Q = new AtomicBoolean(false);
+    private static final AtomicBoolean SIGNAL_WARN = new AtomicBoolean(false);
+    private static final AtomicBoolean SIGNAL_VIS = new AtomicBoolean(false);
+    private static final AtomicInteger ENTRY_COUNT = new AtomicInteger();
 
     /**
      * True once a timeline entry parse has started. When SafeX is active it must
@@ -66,6 +75,13 @@ public final class SafeX {
     /** Called at the very start of a timeline entry / module item parse. */
     public static void beginEntry() {
         active = true;
+        if (ENTRY_SEEN.compareAndSet(false, true)) {
+            System.err.println("SafeX: entry parse hook active");
+        }
+        int entries = ENTRY_COUNT.incrementAndGet();
+        if (entries % 25 == 0) {
+            System.err.println("SafeX: entries parsed=" + entries);
+        }
         int[] depth = DEPTH.get();
         int d = depth[0];
         if (d < MAX_DEPTH) {
@@ -96,6 +112,9 @@ public final class SafeX {
         if (!(media instanceof JsonMediaEntity)) {
             return;
         }
+        if (MEDIA_SEEN.compareAndSet(false, true)) {
+            System.err.println("SafeX: media parse hook active");
+        }
         int[] depth = DEPTH.get();
         int d = depth[0];
         if (d == 0) {
@@ -105,9 +124,15 @@ public final class SafeX {
         }
         JsonMediaEntity entity = (JsonMediaEntity) media;
         boolean sensitive = entity.q;
+        if (sensitive && SIGNAL_Q.compareAndSet(false, true)) {
+            System.err.println("SafeX: signal possibly_sensitive");
+        }
         if (!sensitive) {
             JsonSensitiveMediaWarning warning = entity.u;
             sensitive = warning != null && (warning.a || warning.b || warning.c);
+            if (sensitive && SIGNAL_WARN.compareAndSet(false, true)) {
+                System.err.println("SafeX: signal sensitive_media_warning");
+            }
         }
         if (sensitive) {
             FRAMES.get()[d - 1] = true;
@@ -123,6 +148,9 @@ public final class SafeX {
         int[] depth = DEPTH.get();
         int d = depth[0];
         if (d > 0) {
+            if (SIGNAL_VIS.compareAndSet(false, true)) {
+                System.err.println("SafeX: signal media_visibility_results");
+            }
             FRAMES.get()[d - 1] = true;
         }
     }

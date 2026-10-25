@@ -320,3 +320,31 @@ Hook: `JsonMediaVisibilityResults$$JsonObjectMapper.parse` →
 `SafeX.observeVisibility()`, injected before `RETURN_OBJECT`.
 
 Tests: two new cases (drop on visibility, no leak outside an entry) → 13/13.
+
+## F16. X's own "hide sensitive content" setting is account-level, 3x3
+
+`JsonSensitiveMediaSettings` (LoganSquare) parses three JSON fields:
+
+| JSON key | Model field | Values |
+|---|---|---|
+| `view_adult_content` | `adult` | `SensitiveMediaLevel` |
+| `view_violent_content` | `violent` | `Warn` / `Allow` / `Drop` |
+| `view_other_content` | `other` | |
+
+The model is `com.twitter.sensitivemedia.model.b`, served by
+`com.twitter.sensitivemedia.i` (impl `com.twitter.sensitivemedia.request.c`):
+`a()` returns an Rx Single with the settings, `b(model)` writes them to the
+account. X's servers apply the level when building timeline JSON — which is why
+restricted posts arrive carrying `media_visibility_results` instead of being
+filtered client-side.
+
+SafeX logic added on top (commit on main):
+
+- `SafeXSettings.forceDrop(...)` replaces every write with
+  `Drop/Drop/Drop`, so the UI cannot turn hiding off.
+- `SafeXSettings.enforce(...)` runs when the app reads the setting and pushes
+  `Drop/Drop/Drop` once per process, so the account itself is switched to hide
+  without user interaction.
+
+Stubs added for `SensitiveMediaLevel`, `model.b`, repository interface `i` and
+the Rx Single type `io.reactivex.internal.operators.single.x`.
