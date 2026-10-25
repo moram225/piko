@@ -155,6 +155,165 @@ public final class SafeX {
         }
     }
 
+    /**
+     * Terms appended to every search query as exclusions (" -term"). X applies
+     * them server-side, so matching posts never reach the device. The user's own
+     * query terms are never excluded: X treats "X -X" as invalid and blocks the
+     * request entirely (verified on device).
+     */
+    private static final String[] EXCLUDE_TERMS = {
+            "nsfw", "nsfwtwt", "porn", "pornhub", "hentai", "rule34", "onlyfans", "xxx",
+            "pussy", "dick", "cock", "tits", "boobs", "anal", "cum", "nude", "naked",
+            "sexting", "milf", "bdsm", "fetish", "teen", "teenager", "loli", "shota",
+            "escort", "blowjob", "handjob", "creampie", "orgy", "gangbang", "threesome",
+            "minichat", "anxiouspandaa",
+            // Arabic
+            "سكس", "نيك", "طيز", "شرموط", "عاري", "بورن",
+            // Japanese
+            "エロ", "おっぱい", "セックス", "中出し", "ヌード", "変態",
+            // Russian / Spanish / Portuguese / German / French
+            "секс", "порно", "голая", "sexo", "tetas", "putaria", "novinha",
+            "nackt", "titten", "sexe", "salope",
+            // Korean / Chinese / Turkish / Italian / Indonesian
+            "야동", "섹스", "色情", "裸照", "seks", "sesso", "bokep", "telanjang"
+    };
+
+    private static final AtomicBoolean QUERY_LOGGED = new AtomicBoolean(false);
+    private static final AtomicInteger QUERY_COUNT = new AtomicInteger();
+    private static final AtomicInteger PARAM_NAMES_LOGGED = new AtomicInteger();
+
+    private static final AtomicBoolean HARD_BLOCKED = new AtomicBoolean(false);
+
+    /** "minichatt" -> "minichat", "teenageerr" -> "tenager". */
+    private static String collapse(String s) {
+        StringBuilder out = new StringBuilder(s.length());
+        char previous = 0;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == previous) {
+                continue;
+            }
+            out.append(c);
+            previous = c;
+        }
+        return out.toString();
+    }
+
+    /**
+     * True when the query itself is an explicit term. Such a search cannot be
+     * cleaned with exclusions ("X -X" is rejected by X), so it is blocked
+     * outright instead of returning a feed of explicit posts.
+     */
+    private static boolean isExplicitQuery(String query) {
+        String lower = query.toLowerCase(java.util.Locale.ROOT);
+        StringBuilder word = new StringBuilder();
+        for (int i = 0; i <= lower.length(); i++) {
+            char c = i < lower.length() ? lower.charAt(i) : ' ';
+            if (Character.isLetterOrDigit(c)) {
+                word.append(c);
+                continue;
+            }
+            if (word.length() > 1) {
+                String collapsed = collapse(word.toString());
+                for (String term : EXCLUDE_TERMS) {
+                    String stem = collapse(term.toLowerCase(java.util.Locale.ROOT));
+                    if (collapsed.equals(stem)) {
+                        return true;
+                    }
+                    if (stem.length() >= 5 && collapsed.contains(stem)) {
+                        return true;
+                    }
+                }
+            }
+            word.setLength(0);
+        }
+        return false;
+    }
+
+    /** Spelling variants, so exact-term server exclusions still bite. */
+    private static void addVariants(java.util.LinkedHashSet<String> out, String term) {
+        String lower = term.toLowerCase(java.util.Locale.ROOT);
+        out.add(term);
+        if (lower.length() >= 4) {
+            out.add(lower + lower.charAt(lower.length() - 1));
+            out.add(lower + "s");
+            if (lower.contains("ou")) {
+                out.add(lower.replaceFirst("ou", "o"));
+            }
+            if (lower.contains("oo")) {
+                out.add(lower.replaceFirst("oo", "o"));
+            }
+            if (lower.contains("ee")) {
+                out.add(lower.replaceFirst("ee", "e"));
+            }
+            out.add(lower.replaceFirst("a", "aa"));
+            out.add(lower.replaceFirst("e", "ee"));
+            out.add(lower.replaceFirst("a", ""));
+            out.add(lower.replaceFirst("e", ""));
+        }
+    }
+
+    /**
+     * Rewrites the outgoing search query: explicit searches are blocked, all
+     * others get the blocklist (plus spelling variants) appended as exclusions
+     * so X filters them server-side on every search surface.
+     */
+    public static String augmentQueryParam(String name, String value) {
+        if (PARAM_NAMES_LOGGED.getAndIncrement() < 4) {
+            System.err.println("SafeX: param setter name=" + name);
+        }
+        // X uses "q" on the legacy search endpoint and "query" on GraphQL.
+        if (!("q".equals(name) || "query".equals(name)) || value == null || value.isEmpty()) {
+            return value;
+        }
+
+        if (isExplicitQuery(value)) {
+            if (HARD_BLOCKED.compareAndSet(false, true)) {
+                System.err.println("SafeX: explicit search blocked");
+            }
+            return "safexnoresults9f3c";
+        }
+
+        java.util.Locale locale = java.util.Locale.ROOT;
+        String lower = value.toLowerCase(locale);
+        StringBuilder out = new StringBuilder(value);
+        java.util.LinkedHashSet<String> terms = new java.util.LinkedHashSet<>();
+        for (String term : EXCLUDE_TERMS) {
+            addVariants(terms, term);
+        }
+
+        int added = 0;
+        for (String term : terms) {
+            if (added >= 40 || out.length() > 1100) {
+                break;
+            }
+            String lowerTerm = term.toLowerCase(locale);
+            // Never exclude a term the user searched for: "X -X" makes X reject
+            // the whole request.
+            if (lower.contains(lowerTerm) || lower.contains(" -" + lowerTerm)) {
+                continue;
+            }
+            out.append(" -").append(term);
+            added++;
+        }
+
+        if (added > 0) {
+            QUERY_COUNT.incrementAndGet();
+            if (QUERY_LOGGED.compareAndSet(false, true)) {
+                System.err.println("SafeX: search exclusions applied (added=" + added + ")");
+            }
+        }
+        return out.toString();
+    }
+
+    /** Object-typed entry point for the generic map builder (e0.B). */
+    public static Object augmentQueryParamObject(Object name, Object value) {
+        if (!(name instanceof String) || !(value instanceof String)) {
+            return value;
+        }
+        return augmentQueryParam((String) name, (String) value);
+    }
+
     /** Diagnostics helper for logging; carries no post content. */
     public static String describe() {
         return "SafeX depth=" + DEPTH.get()[0];

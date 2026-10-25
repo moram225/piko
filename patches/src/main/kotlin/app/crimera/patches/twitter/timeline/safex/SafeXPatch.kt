@@ -110,6 +110,34 @@ private object SafeXMediaVisibilityParseFingerprint : Fingerprint(
     returnType = "Ljava/lang/Object;",
 )
 
+/**
+ * Param setter on the legacy request builder. Every search surface writes its
+ * query through this method, so appending exclusions here covers them all.
+ */
+/** Query-parameter setter on the HTTP request builder (c, not the header j). */
+private object SafeXQueryParamFingerprint : Fingerprint(
+    definingClass = "Lcom/twitter/network/s\$a;",
+    name = "c",
+    returnType = "V",
+    parameters = listOf("Ljava/lang/String;", "Ljava/lang/String;"),
+)
+
+/** Search args builder: `B("q", text)` stores the query for the timeline request. */
+private object SafeXSearchArgsFingerprint : Fingerprint(
+    definingClass = "Lcom/twitter/util/collection/e0;",
+    name = "B",
+    returnType = "V",
+    parameters = listOf("Ljava/lang/Object;", "Ljava/lang/Object;"),
+)
+
+/** GraphQL body variable setter: `q("query", text)` for search_timeline. */
+private object SafeXGraphQlVariableFingerprint : Fingerprint(
+    definingClass = "Lcom/twitter/api/legacy/request/urt/graphql/a\$a;",
+    name = "q",
+    returnType = "V",
+    parameters = listOf("Ljava/lang/String;", "Ljava/lang/String;"),
+)
+
 @Suppress("unused")
 val safeX =
     bytecodePatch(
@@ -217,6 +245,23 @@ val safeX =
                 invoke-static { v$searchReadRegister }, $SAFEX_SETTINGS_CLASS->forceSearchRead(Ljava/lang/Object;)Ljava/lang/Object;
                 move-result-object v$searchReadRegister
                 check-cast v$searchReadRegister, $SEARCH_MODEL
+                """.trimIndent(),
+            )
+            // 7. Search exclusions at the request layer: GraphQL body variables
+            //    (search_timeline) and HTTP query parameters. The args builder is
+            //    deliberately not hooked: it also feeds the visible search box.
+            SafeXGraphQlVariableFingerprint.method.addInstructions(
+                0,
+                """
+                invoke-static { p1, p2 }, $SAFEX_CLASS->augmentQueryParam(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+                move-result-object p2
+                """.trimIndent(),
+            )
+            SafeXQueryParamFingerprint.method.addInstructions(
+                0,
+                """
+                invoke-static { p1, p2 }, $SAFEX_CLASS->augmentQueryParam(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+                move-result-object p2
                 """.trimIndent(),
             )
         }
