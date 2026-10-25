@@ -294,3 +294,29 @@ Edge case not covered by this argument: opening a single post directly (detail
 screen / deep link) is not a timeline entry parse, so a sensitive post reached
 that way is not dropped by SafeX. Same for any surface that renders a post
 without a URT entry wrapper. Untested on device.
+
+## F15. SECOND SIGNAL: media_visibility_results (age / adult gate)
+
+Device testing showed posts rendering X's "Content warning: Adult Content —
+Verify Age" card that the warning-based hook did not catch. Those posts are not
+`JsonSensitiveMediaWarning`; they carry a separate object.
+
+Decompiled evidence:
+
+- `JsonTweetWithVisibilityResults` field `g` is annotated
+  `@JsonField(name = {"media_visibility_results"})` and parsed by
+  `LoganSquare.typeConverterFor(com.twitter.model.mediavisibility.g.class)`.
+- `JsonMediaVisibilityResults$$JsonObjectMapper` parses `all_media` and
+  `blurred_image_interstitial`.
+- `JsonBlurredImageInterstitial$$JsonObjectMapper` parses `interstitial_action`,
+  `opacity`, `text`, `title`, `available_verification_options` — i.e. the exact
+  "Content warning / Verify Age" card.
+
+Therefore: parsing `JsonMediaVisibilityResults` means X restricted this post's
+media for age/adult reasons. SafeX now marks the current entry frame when that
+object is parsed, in addition to the per-media flags.
+
+Hook: `JsonMediaVisibilityResults$$JsonObjectMapper.parse` →
+`SafeX.observeVisibility()`, injected before `RETURN_OBJECT`.
+
+Tests: two new cases (drop on visibility, no leak outside an entry) → 13/13.

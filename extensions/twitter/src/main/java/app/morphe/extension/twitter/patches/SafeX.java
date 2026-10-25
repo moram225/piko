@@ -114,6 +114,19 @@ public final class SafeX {
         }
     }
 
+    /**
+     * Called when X parses {@code media_visibility_results} (age / adult gate).
+     * Presence of that object means X decided to restrict the post's media, so
+     * the whole entry is marked exactly like a sensitive-media flag.
+     */
+    public static void observeVisibility() {
+        int[] depth = DEPTH.get();
+        int d = depth[0];
+        if (d > 0) {
+            FRAMES.get()[d - 1] = true;
+        }
+    }
+
     /** Diagnostics helper for logging; carries no post content. */
     public static String describe() {
         return "SafeX depth=" + DEPTH.get()[0];

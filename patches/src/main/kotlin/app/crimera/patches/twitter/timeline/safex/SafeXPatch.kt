@@ -44,6 +44,17 @@ private object SafeXMediaEntityParseFingerprint : Fingerprint(
     returnType = "Ljava/lang/Object;",
 )
 
+/**
+ * X's age/adult gate. `media_visibility_results` is attached to a tweet when X
+ * decided to restrict its media, and carries the blurred-image interstitial that
+ * renders as "Content warning: Adult Content".
+ */
+private object SafeXMediaVisibilityParseFingerprint : Fingerprint(
+    definingClass = "Lcom/twitter/model/json/mediavisibility/JsonMediaVisibilityResults\$\$JsonObjectMapper;",
+    name = "parse",
+    returnType = "Ljava/lang/Object;",
+)
+
 @Suppress("unused")
 val safeX =
     bytecodePatch(
@@ -74,6 +85,16 @@ val safeX =
                 returnObject.location.index,
                 """
                 invoke-static { v$returnRegister }, $SAFEX_CLASS->observeMedia(Ljava/lang/Object;)V
+                """.trimIndent(),
+            )
+
+            // 3. Mark the frame when X attaches media-visibility (age/adult) results.
+            val visibilityParse = SafeXMediaVisibilityParseFingerprint.method
+            val visibilityReturn = visibilityParse.instructions.last { it.opcode == Opcode.RETURN_OBJECT }
+            visibilityParse.addInstructions(
+                visibilityReturn.location.index,
+                """
+                invoke-static {}, $SAFEX_CLASS->observeVisibility()V
                 """.trimIndent(),
             )
         }

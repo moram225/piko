@@ -86,7 +86,17 @@ public final class SafeXPolicyTest {
         SafeX.observeMedia(null);
         check("non-media ignored", false, SafeX.endEntry());
 
-        // 10. unbalanced endEntry is harmless
+        // 10. media_visibility_results (age/adult gate) drops the entry
+        SafeX.beginEntry();
+        SafeX.observeVisibility();
+        check("media_visibility_results drops entry", true, SafeX.endEntry());
+
+        // 11. visibility outside an entry must not leak
+        SafeX.observeVisibility();
+        SafeX.beginEntry();
+        check("out-of-entry visibility does not leak", false, SafeX.endEntry());
+
+        // 12. balanced bracket is harmless
         check("unbalanced endEntry is safe", false, SafeX.endEntry());
 
         System.out.println();
