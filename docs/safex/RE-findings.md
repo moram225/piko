@@ -257,3 +257,40 @@ device with a warm entity cache.
 
 Evidence: directory inventory of the decompiled tree (`/work/out/jadx-src`) plus
 `grep -rln 'TimelineCache|CachedTimeline' com/x com/twitter/model`.
+
+## F14. Surface coverage: all timelines share one entry parser
+
+`com.x.models.timelines.TimelineType` enumerates 61 surfaces, including:
+
+FOR_YOU, FOLLOWING, CONVERSATION, USER_PROFILE_POSTS_ONLY,
+USER_PROFILE_POSTS_AND_REPLIES, USER_PROFILE_MEDIA/PHOTOS/VIDEOS/REPOSTS/FAVS,
+BOOKMARKS, BOOKMARK_COLLECTION, SEARCH_TOP, SEARCH_LATEST, SEARCH_MEDIA,
+LIST_POSTS, COMMUNITY_DETAIL_POSTS, COMMUNITY_MEDIA, COMMUNITIES_HOME,
+EXPLORE_FOR_YOU, VIDEO_TAB, NOTIFICATIONS, TOPIC.
+
+The repository layer (`com/x/repositories/urt/*`) is parameterised by this enum:
+`d`, `e0`, `i0`, `k`, `p`, `y0` all take `TimelineType`. Call sites show one
+generic pipeline for many surfaces, e.g. in `com/x/composer/work/SubmitPostWork`:
+
+```java
+kotlin.collections.f.i(
+    com.x.models.timelines.p.a(TimelineType.FOR_YOU, new String[0]),
+    com.x.models.timelines.p.a(TimelineType.FOLLOWING, new String[0]));
+```
+
+and `com/x/googlessp/y0.java` groups CONVERSATION / EXPLORE_FOR_YOU / FOR_YOU /
+USER_PROFILE_POSTS_ONLY / VIDEO_TAB through the same branch.
+
+There is exactly one `JsonTimelineEntry` DTO and one
+`JsonTimelineEntry$$JsonObjectMapper`, referenced only inside
+`com.twitter.model.json.timeline.urt` (`JsonTimelineOperation`,
+`JsonTimelineItem`, `JsonTimelineModule`, `JsonAddToModuleInstruction`).
+
+Conclusion: any surface rendered as a URT timeline — Home, Search Top/Latest,
+profiles, bookmarks, lists, communities, topic, video tab — deserialises entries
+through the single mapper SafeX hooks, so the drop applies uniformly.
+
+Edge case not covered by this argument: opening a single post directly (detail
+screen / deep link) is not a timeline entry parse, so a sensitive post reached
+that way is not dropped by SafeX. Same for any surface that renders a post
+without a URT entry wrapper. Untested on device.
