@@ -48,28 +48,35 @@ public final class SafeXSettings {
     }
 
     /**
-     * Forces Search settings to "Hide sensitive content" (and the blocked/muted
-     * filter). Takes and returns Object so it can be injected into both the
-     * typed method and its synthetic bridge without a VerifyError.
+     * Forces Search settings. Takes and returns Object so it can be injected
+     * into both the typed method and its synthetic bridge without a VerifyError.
+     *
+     * Field semantics (verified on device):
+     *   a == "Hide sensitive content" switch; true = SHOW sensitive (no filter),
+     *       false = filter sensitive out. The UI label is inverted vs the flag.
+     *   b == "Remove blocked and muted accounts"; true = filter is on.
      */
-    public static Object forceSearchModel(Object ignored) {
-        return new com.twitter.model.search.c(new com.twitter.model.search.c.a());
+    private static Object searchModel(boolean filteringSwitchOn) {
+        com.twitter.model.search.c.a builder = new com.twitter.model.search.c.a();
+        builder.a = filteringSwitchOn;
+        builder.b = true;
+        return new com.twitter.model.search.c(builder);
     }
 
-    /** Read path of the search settings (what the UI shows). */
+    /** Read path: show the switch as ON so the setting cannot be turned off. */
     public static Object forceSearchRead(Object ignored) {
         if (!SEARCH_READ_LOGGED.getAndSet(true)) {
             System.err.println("SafeXSettings: search settings read -> forced on");
         }
-        return forceSearchModel(ignored);
+        return searchModel(true);
     }
 
-    /** Write path of the search settings (what is sent to X). */
+    /** Write path: send the value that actually filters (flag false). */
     public static Object forceSearchWrite(Object ignored) {
         if (!SEARCH_WRITE_LOGGED.getAndSet(true)) {
-            System.err.println("SafeXSettings: search settings write -> forced on");
+            System.err.println("SafeXSettings: search settings write -> forced filter");
         }
-        return forceSearchModel(ignored);
+        return searchModel(false);
     }
 
     /** Logs X's answer to the search settings update (true = server accepted). */

@@ -62,6 +62,25 @@ private object SearchSettingsResultFingerprint : Fingerprint(
     name = "h",
 )
 
+/**
+ * The actual update request: POST /1.1/strato/column/User/<id>/search/searchSafety.
+ * Every UI path (settings screen, 3-dot toggle) must build this object, so
+ * forcing its model covers all of them.
+ */
+private object SearchSafetyRequestFingerprint : Fingerprint(
+    definingClass = "Lcom/twitter/api/legacy/request/search/g;",
+    name = "<init>",
+)
+
+/**
+ * Same idea for the sensitive-media update request; covers any future UI entry
+ * point that bypasses the settings screen.
+ */
+private object SensitiveSettingsRequestFingerprint : Fingerprint(
+    definingClass = "Lcom/twitter/sensitivemedia/request/a;",
+    name = "<init>",
+)
+
 private object SafeXEntryParseFingerprint : Fingerprint(
     definingClass = "Lcom/twitter/model/json/timeline/urt/JsonTimelineEntry\$\$JsonObjectMapper;",
     name = "parse",
@@ -167,6 +186,24 @@ val safeX =
                 invoke-static { v$searchResultRegister }, $SAFEX_SETTINGS_CLASS->reportSearchWrite(Ljava/lang/Object;)Ljava/lang/Object;
                 move-result-object v$searchResultRegister
                 check-cast v$searchResultRegister, Ljava/lang/Boolean;
+                """.trimIndent(),
+            )
+
+            // 6. Force the outgoing requests themselves, so no UI path can bypass
+            //    the locks (e.g. the 3-dot toggle in search results).
+            SearchSafetyRequestFingerprint.method.addInstructions(
+                0,
+                """
+                invoke-static { p2 }, $SAFEX_SETTINGS_CLASS->forceSearchWrite(Ljava/lang/Object;)Ljava/lang/Object;
+                move-result-object p2
+                check-cast p2, $SEARCH_MODEL
+                """.trimIndent(),
+            )
+            SensitiveSettingsRequestFingerprint.method.addInstructions(
+                0,
+                """
+                invoke-static { p2 }, $SAFEX_SETTINGS_CLASS->forceDrop($SENSITIVE_SETTINGS_MODEL)$SENSITIVE_SETTINGS_MODEL
+                move-result-object p2
                 """.trimIndent(),
             )
             val searchRead = SearchSettingsReadFingerprint.method
